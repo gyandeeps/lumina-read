@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAudioRecorder } from './useAudioRecorder';
+import { GrowableAudioBuffer } from '../utils/audioProcessor';
 
 export type SpeechStatus = 'idle' | 'loading' | 'ready' | 'listening' | 'error';
 
@@ -13,6 +14,20 @@ export interface WhisperProgress {
   total: number;
 }
 
+/**
+ * Sliding window size in samples (5 seconds at 16kHz).
+ * Only the most recent 5s of audio is sent to Whisper per inference cycle,
+ * dramatically reducing latency as the recording grows.
+ */
+const WINDOW_SAMPLES = 16000 * 5;
+
+/**
+ * Delay (ms) between receiving a result and scheduling the next inference.
+ * This self-scheduling loop adapts to actual inference speed instead of
+ * using a fixed polling interval.
+ */
+const RESCHEDULE_DELAY_MS = 300;
+
 export function useSpeechRecognition() {
   const [status, setStatus] = useState<SpeechStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -21,16 +36,18 @@ export function useSpeechRecognition() {
   const [fileProgress, setFileProgress] = useState<Record<string, WhisperProgress>>({});
 
   const workerRef = useRef<Worker | null>(null);
-  const accumulatedAudioRef = useRef<Float32Array>(new Float32Array(0));
+  const audioBufferRef = useRef<GrowableAudioBuffer>(new GrowableAudioBuffer());
   const isProcessingRef = useRef<boolean>(false);
   const pendingProcessRef = useRef<boolean>(false);
-  const intervalRef = useRef<any>(null);
+  const rescheduleTimerRef = useRef<any>(null);
+  const isListeningRef = useRef<boolean>(false);
+  const sessionIdRef = useRef<number>(0);
 
-  // Clean up worker and interval on unmount
+  // Clean up worker and timers on unmount
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (rescheduleTimerRef.current) {
+        clearTimeout(rescheduleTimerRef.current);
       }
       if (workerRef.current) {
         workerRef.current.terminate();
@@ -38,32 +55,47 @@ export function useSpeechRecognition() {
     };
   }, []);
 
-  // Function to send the accumulated audio to the worker
+  // Function to send a sliding window of audio to the worker
   const triggerProcessing = useCallback(() => {
     if (isProcessingRef.current) {
       pendingProcessRef.current = true;
       return;
     }
 
-    const audioBuffer = accumulatedAudioRef.current;
-    if (audioBuffer.length === 0) return;
+    const buffer = audioBufferRef.current;
+    if (buffer.size === 0) return;
 
     isProcessingRef.current = true;
     pendingProcessRef.current = false;
 
-    workerRef.current?.postMessage({
-      type: 'process',
-      audio: audioBuffer,
-    });
+    // Extract only the last WINDOW_SAMPLES (5s) of audio
+    const windowData = buffer.getLastNSamples(WINDOW_SAMPLES);
+
+    // Transfer the buffer to the worker (zero-copy)
+    workerRef.current?.postMessage(
+      { type: 'process', audio: windowData, sessionId: sessionIdRef.current },
+      [windowData.buffer]
+    );
   }, []);
 
-  // Receive audio data from the recorder
+  /**
+   * Self-scheduling loop: after each result, wait RESCHEDULE_DELAY_MS then
+   * trigger the next inference. This adapts to actual inference speed.
+   */
+  const scheduleNextProcessing = useCallback(() => {
+    if (!isListeningRef.current) return;
+
+    rescheduleTimerRef.current = setTimeout(() => {
+      rescheduleTimerRef.current = null;
+      if (isListeningRef.current) {
+        triggerProcessing();
+      }
+    }, RESCHEDULE_DELAY_MS);
+  }, [triggerProcessing]);
+
+  // Receive audio data from the recorder — append to the growable buffer
   const handleAudioData = useCallback((incomingData: Float32Array) => {
-    const current = accumulatedAudioRef.current;
-    const next = new Float32Array(current.length + incomingData.length);
-    next.set(current);
-    next.set(incomingData, current.length);
-    accumulatedAudioRef.current = next;
+    audioBufferRef.current.append(incomingData);
   }, []);
 
   const recorder = useAudioRecorder(handleAudioData);
@@ -85,7 +117,7 @@ export function useSpeechRecognition() {
       workerRef.current = worker;
 
       worker.onmessage = (event: MessageEvent) => {
-        const { status: msgStatus, file, loaded, total, data, message } = event.data;
+        const { status: msgStatus, file, loaded, total, data, message, sessionId } = event.data;
 
         if (msgStatus === 'progress') {
           setFileProgress((prev) => ({
@@ -96,17 +128,27 @@ export function useSpeechRecognition() {
           setStatus('ready');
           setFileProgress({});
         } else if (msgStatus === 'result') {
+          if (sessionId !== undefined && sessionId !== sessionIdRef.current) {
+            console.log(`Ignoring worker result for stale session: received ${sessionId}, current ${sessionIdRef.current}`);
+            return;
+          }
           isProcessingRef.current = false;
           if (data) {
             setTranscript(data.text || '');
             setWords(data.chunks || []);
           }
 
-          // If more audio was recorded during worker run, trigger another transcription immediately
+          // If more audio was recorded during worker run, process immediately;
+          // otherwise schedule the next run after a short delay.
           if (pendingProcessRef.current) {
             triggerProcessing();
+          } else {
+            scheduleNextProcessing();
           }
         } else if (msgStatus === 'error') {
+          if (sessionId !== undefined && sessionId !== sessionIdRef.current) {
+            return;
+          }
           isProcessingRef.current = false;
           setStatus('error');
           setError(message || 'An error occurred in the transcription worker.');
@@ -119,37 +161,44 @@ export function useSpeechRecognition() {
       setStatus('error');
       setError(err.message || 'Failed to instantiate Web Worker.');
     }
-  }, [triggerProcessing]);
+  }, [triggerProcessing, scheduleNextProcessing]);
 
-  // Start capturing audio and running periodic Whisper inference
+  // Start capturing audio and running adaptive Whisper inference
   const startListening = useCallback(async () => {
     if (status !== 'ready') return;
 
-    accumulatedAudioRef.current = new Float32Array(0);
+    sessionIdRef.current += 1;
+    audioBufferRef.current.clear();
     setTranscript('');
     setWords([]);
     setError(null);
     setStatus('listening');
+    isListeningRef.current = true;
 
     try {
       await recorder.startRecording();
 
-      // Trigger Whisper transcription every 1.5 seconds on the accumulated stream
-      intervalRef.current = setInterval(() => {
+      // Kick off the first inference after a short initial delay to
+      // accumulate a small buffer of audio first
+      rescheduleTimerRef.current = setTimeout(() => {
+        rescheduleTimerRef.current = null;
         triggerProcessing();
-      }, 1500);
+      }, 800);
     } catch (err: any) {
       console.error('Failed to start speech recognition:', err);
       setStatus('ready');
+      isListeningRef.current = false;
       setError(err.message || 'Microphone recording could not start.');
     }
   }, [status, recorder, triggerProcessing]);
 
   // Stop capturing audio and do one final transcription run
   const stopListening = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    isListeningRef.current = false;
+
+    if (rescheduleTimerRef.current) {
+      clearTimeout(rescheduleTimerRef.current);
+      rescheduleTimerRef.current = null;
     }
 
     recorder.stopRecording();
@@ -161,7 +210,8 @@ export function useSpeechRecognition() {
 
   // Reset transcript and audio buffers manually
   const resetTranscript = useCallback(() => {
-    accumulatedAudioRef.current = new Float32Array(0);
+    sessionIdRef.current += 1;
+    audioBufferRef.current.clear();
     setTranscript('');
     setWords([]);
     isProcessingRef.current = false;

@@ -7,7 +7,80 @@ export function useAudioRecorder(onAudioData: (audio: Float32Array) => void) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const onAudioDataRef = useRef(onAudioData);
+  onAudioDataRef.current = onAudioData;
+
+  /**
+   * Try to set up AudioWorkletNode for off-main-thread downsampling.
+   * Returns true on success, false if unsupported or failed (caller should fall back).
+   */
+  const tryAudioWorklet = useCallback(async (
+    ctx: AudioContext,
+    source: MediaStreamAudioSourceNode
+  ): Promise<boolean> => {
+    try {
+      if (typeof ctx.audioWorklet?.addModule !== 'function') {
+        return false;
+      }
+
+      // Build the worklet processor URL from Vite's import.meta
+      const workletUrl = new URL(
+        '../workers/audio-worklet-processor.ts',
+        import.meta.url
+      ).href;
+
+      await ctx.audioWorklet.addModule(workletUrl);
+
+      const workletNode = new AudioWorkletNode(ctx, 'downsampler-processor');
+      workletNodeRef.current = workletNode;
+
+      workletNode.port.onmessage = (e: MessageEvent) => {
+        if (e.data?.audio) {
+          onAudioDataRef.current(e.data.audio);
+        }
+      };
+
+      source.connect(workletNode);
+      workletNode.connect(ctx.destination);
+
+      console.log('Audio: Using AudioWorkletNode (off-main-thread downsampling)');
+      return true;
+    } catch (err) {
+      console.warn('Audio: AudioWorklet setup failed, will fall back to ScriptProcessor:', err);
+      return false;
+    }
+  }, []);
+
+  /**
+   * Fall back to ScriptProcessorNode (deprecated but universally supported).
+   * Runs the downsampling callback on the main thread.
+   */
+  const setupScriptProcessor = useCallback((
+    ctx: AudioContext,
+    source: MediaStreamAudioSourceNode
+  ): void => {
+    const processor = ctx.createScriptProcessor(4096, 1, 1);
+    processorRef.current = processor;
+
+    processor.onaudioprocess = (e) => {
+      const inputBuffer = e.inputBuffer.getChannelData(0);
+      const currentSampleRate = ctx.sampleRate;
+
+      // Downsample the buffer to 16kHz
+      const downsampled = downsampleBuffer(inputBuffer, currentSampleRate, 16000);
+
+      if (downsampled.length > 0) {
+        onAudioDataRef.current(downsampled);
+      }
+    };
+
+    source.connect(processor);
+    processor.connect(ctx.destination);
+
+    console.log('Audio: Using ScriptProcessorNode (main-thread fallback)');
+  }, []);
 
   const startRecording = useCallback(async () => {
     setError(null);
@@ -39,24 +112,11 @@ export function useAudioRecorder(onAudioData: (audio: Float32Array) => void) {
       const source = ctx.createMediaStreamSource(stream);
       sourceRef.current = source;
 
-      // 4. Create ScriptProcessorNode for universal browser/iPad compatibility
-      const processor = ctx.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
-
-      processor.onaudioprocess = (e) => {
-        const inputBuffer = e.inputBuffer.getChannelData(0);
-        const currentSampleRate = ctx.sampleRate;
-        
-        // Downsample the buffer to 16kHz
-        const downsampled = downsampleBuffer(inputBuffer, currentSampleRate, 16000);
-        
-        if (downsampled.length > 0) {
-          onAudioData(downsampled);
-        }
-      };
-
-      source.connect(processor);
-      processor.connect(ctx.destination);
+      // 4. Try AudioWorkletNode first, fall back to ScriptProcessorNode
+      const workletSuccess = await tryAudioWorklet(ctx, source);
+      if (!workletSuccess) {
+        setupScriptProcessor(ctx, source);
+      }
 
       setIsRecording(true);
     } catch (err: any) {
@@ -70,9 +130,13 @@ export function useAudioRecorder(onAudioData: (audio: Float32Array) => void) {
         audioContextRef.current = null;
       }
     }
-  }, [onAudioData]);
+  }, [tryAudioWorklet, setupScriptProcessor]);
 
   const stopRecording = useCallback(() => {
+    if (workletNodeRef.current) {
+      workletNodeRef.current.disconnect();
+      workletNodeRef.current = null;
+    }
     if (processorRef.current) {
       processorRef.current.disconnect();
       processorRef.current = null;

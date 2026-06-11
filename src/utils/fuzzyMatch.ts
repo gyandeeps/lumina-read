@@ -36,10 +36,12 @@ export function isWordMatch(spoken: string, target: string): boolean {
  *
  * @param targetWords Lowercased/cleaned words from the target sentence
  * @param spokenChunks Chunk output from the Whisper worker (e.g., [{ text: "The" }, { text: "cat" }])
+ * @param startFromIndex Index into targetWords to begin matching from (skip already-confirmed words)
  */
 export function updateReadingProgress(
   targetWords: string[],
-  spokenChunks: Array<{ text: string }>
+  spokenChunks: Array<{ text: string }>,
+  startFromIndex: number = 0
 ): {
   currentWordIndex: number;
   matchedIndices: Set<number>;
@@ -56,7 +58,7 @@ export function updateReadingProgress(
     }
   }
 
-  let currentWordIndex = 0;
+  let currentWordIndex = startFromIndex;
   const matchedIndices = new Set<number>();
 
   for (const spoken of spokenWords) {

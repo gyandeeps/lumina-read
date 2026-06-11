@@ -8,19 +8,25 @@ env.allowLocalModels = false;
 
 let transcriber: any = null;
 
+const log = (...args: any[]) => {
+  if (import.meta.env.DEV) {
+    console.log(...args);
+  }
+};
+
 async function getTranscriber(progressCallback: (data: any) => void) {
   if (transcriber) return transcriber;
 
-  console.log('Worker: Initializing Whisper Tiny pipeline...');
+  log('Worker: Initializing Whisper Tiny pipeline...');
   
   // Try WebGPU first
   try {
-    console.log('Worker: Attempting WebGPU initialization...');
+    log('Worker: Attempting WebGPU initialization...');
     transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
       device: 'webgpu',
       progress_callback: progressCallback,
     });
-    console.log('Worker: Pipeline initialized successfully with WebGPU.');
+    log('Worker: Pipeline initialized successfully with WebGPU.');
     return transcriber;
   } catch (webgpuError) {
     console.warn('Worker: WebGPU failed, falling back to WASM/CPU:', webgpuError);
@@ -31,7 +37,7 @@ async function getTranscriber(progressCallback: (data: any) => void) {
         device: 'wasm',
         progress_callback: progressCallback,
       });
-      console.log('Worker: Pipeline initialized successfully with WASM.');
+      log('Worker: Pipeline initialized successfully with WASM.');
       return transcriber;
     } catch (wasmError) {
       console.error('Worker: WASM initialization failed:', wasmError);
@@ -42,7 +48,7 @@ async function getTranscriber(progressCallback: (data: any) => void) {
 
 // Listen for messages from the main thread
 self.addEventListener('message', async (event: MessageEvent) => {
-  const { type, audio, wasmPaths } = event.data;
+  const { type, wasmPaths } = event.data;
 
   if (type === 'init') {
     if (wasmPaths && env.backends.onnx.wasm) {
@@ -73,32 +79,30 @@ self.addEventListener('message', async (event: MessageEvent) => {
   }
 
   if (type === 'process') {
+    const { audio, sessionId } = event.data;
     if (!audio) {
-      self.postMessage({ status: 'error', message: 'No audio data received.' });
+      self.postMessage({ status: 'error', message: 'No audio data received.', sessionId });
       return;
     }
 
     try {
       const pipe = await getTranscriber(() => {});
       
-      console.log('Worker: Processing audio buffer, length =', audio.length);
-      
-      const startTime = performance.now();
       const response = await pipe(audio, {
-        chunk_length_s: 30,
-        stride_length_s: 5,
+        chunk_length_s: 10,
+        stride_length_s: 2,
         return_timestamps: 'word',
       });
-      const duration = performance.now() - startTime;
-      console.log(`Worker: Transcription completed in ${duration.toFixed(2)}ms`);
+      log(`Worker: Recognized text: "${response?.text || ''}"`);
 
       self.postMessage({
         status: 'result',
         data: response,
+        sessionId,
       });
     } catch (err: any) {
       console.error('Worker: Error transcribing audio:', err);
-      self.postMessage({ status: 'error', message: `Transcription failed: ${err.message || err}` });
+      self.postMessage({ status: 'error', message: `Transcription failed: ${err.message || err}`, sessionId });
     }
   }
 });

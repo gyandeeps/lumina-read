@@ -87,7 +87,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack }) =
     if (isSentenceCompleted || isStoryCompleted) return;
 
     if (words.length > 0) {
-      const { currentWordIndex: nextIndex } = updateReadingProgress(expectedTokens, words);
+      const { currentWordIndex: nextIndex } = updateReadingProgress(expectedTokens, words, currentWordIndex);
 
       if (nextIndex > currentWordIndex) {
         setCurrentWordIndex(nextIndex);
@@ -110,6 +110,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack }) =
       setCurrentWordIndex(0);
       setIsSentenceCompleted(false);
       resetTranscript();
+      startListening();
     } else {
       setIsStoryCompleted(true);
       // Extra grand confetti explosion for story completion!
@@ -242,7 +243,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack }) =
           <WordHighlighter
             sentence={sentence}
             currentWordIndex={currentWordIndex}
-            isListening={isRecording}
+            isListening={status === 'listening' || isRecording}
           />
         </div>
       </div>
@@ -272,7 +273,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack }) =
             <StartButton
               status={status}
               loadingProgress={loadingProgress}
-              isRecording={isRecording}
+              isRecording={status === 'listening' || isRecording}
               onInit={initModel}
               onStart={startListening}
               onStop={stopListening}
