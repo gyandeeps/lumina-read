@@ -1,73 +1,89 @@
-# React + TypeScript + Vite
+# LuminaRead 🎙️📖✨
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**LuminaRead** is a 100% client-side, offline-capable Progressive Web App (PWA) designed to help 6-year-old children learn to read by serving as an interactive, encouraging, and privacy-preserving voice companion on iPads.
 
-Currently, two official plugins are available:
+By leveraging advanced on-device AI models running directly in the browser via WebGPU/WASM, LuminaRead provides real-time word highlighting, feedback prevention, gamified visual rewards, and acoustic patience features—requiring zero cloud backend and costing nothing to host.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🌟 Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **On-Device Whisper Speech Recognition**: Runs `Xenova/whisper-tiny.en` locally using WebGPU acceleration (with a WASM fallback). Audio remains fully private and runs offline.
+- **Patience-First Reading Logic**: Smart Levenshtein-distance fuzzy matching ignores repetition struggles (like a child repeating "The... The...") and allows minor speech inaccuracies without blocking progress.
+- **Interactive Pronunciation Help**: A child can tap a button to hear the correct pronunciation of the current highlighted word using synthesized text-to-speech. Features built-in **acoustic feedback prevention** (the app pauses mic recording while speaking to prevent self-triggering).
+- **Auto-Activating Microphone**: Moving to the next sentence automatically restarts the voice capture so children can read continuously without having to tap a microphone button repeatedly.
+- **Dynamic Flower Confetti & Celebrations**: Employs vector-drawn Cherry Blossoms, Daisies, Sunflowers, Roses, and Hibiscuses drawn dynamically in-memory using Canvas 2D API for smooth performance.
+- **Progressive Web App (PWA)**: Installable on iPads/tablets, caches large ONNX WASM binaries (up to 30MB limit configurations), and operates 100% offline.
+- **Editable Stories**: Load stories dynamically from `/stories.json`, making it easy for teachers and parents to expand the reading selection.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🏗️ Architecture
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+🎙️ Mic Capture (useAudioRecorder)
+  │ (Capture native PCM stream, downsample to 16kHz mono)
+  ▼
+🤖 Speech Recognition Hook (useSpeechRecognition)
+  │ (Accumulate audio, throttle/lock worker every 1.5s)
+  ▼
+🧵 Web Worker (whisper.worker.ts)
+  │ (Execute Xenova/whisper-tiny.en on WebGPU / WASM fallbacks)
+  ▼
+🎯 UI Word Matcher (ReadingScreen & WordHighlighter)
+  │ (Apply Levenshtein fuzzy match and repetitions safe-gate)
+  ▼
+🎉 Celebration system (confettiHelper & flowerShapes)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🛠️ Getting Started
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Prerequisites
+- Node.js (version specified in `.nvmrc`)
+- Modern web browser (Chrome, Edge, or Safari with WebGPU support for local acceleration)
+
+### Installation
+1. Clone the repository and navigate to the project root:
+   ```bash
+   git clone <repo-url>
+   cd lumina-read
+   ```
+2. Install the dependencies:
+   ```bash
+   npm install
+   ```
+
+### Development
+Start the local development server:
+```bash
+npm run dev
 ```
+The application will serve ONNX Runtime WebAssembly and worker scripts locally from `node_modules` during development.
+
+### Production Build
+Compile code, copy WASM assets, and build the PWA Service Worker:
+```bash
+npm run build
+```
+
+Preview the production build locally:
+```bash
+npm run preview
+```
+
+---
+
+## 📂 Project Structure
+
+- `/src/components`: UI components (`ReadingScreen`, `WordHighlighter`, `StartButton`).
+- `/src/hooks`: Custom React hooks for browser integration (`useAudioRecorder`, `useSpeechRecognition`).
+- `/src/workers`: Whisper Web Worker setup for offline AI execution.
+- `/src/utils`: Helper functions (`fuzzyMatch`, `flowerShapes` and custom canvas confetti logic).
+- `/public/stories.json`: List of configurable stories for the application.
+
+---
+
+## 📄 Documentation Reference
+For deep technical insights on local WASM serving, workbox service worker configurations, and on-device pipeline optimizations, see the [LuminaRead Developer Guide](GEMINI.md).

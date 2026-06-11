@@ -29,6 +29,8 @@ graph TD
     Worker -->|Result payload| SpeechHook
     SpeechHook -->|State update| Screen[ReadingScreen Component]
     Screen -->|Fuzzy Match & Pointer updates| Highlighter[WordHighlighter Component]
+    Screen -->|Trigger celebrations| Confetti[confettiHelper.ts]
+    Confetti -->|Load vector shapes| Flowers[flowerShapes.ts]
     stories[(stories.json)] -->|dynamic fetch| App[App Component]
 ```
 
@@ -49,10 +51,25 @@ graph TD
 * **Streaming Accumulation**: Appends micro-audio chunks into a single rolling Float32Array representing the entire spoken sentence.
 * **Throttled Inference**: Triggers worker execution every 1.5 seconds. Uses a lock flag (`isProcessingRef`) to prevent worker congestion, queuing a catch-up run if audio arrives while active.
 * **Dynamic Reset**: Exposes `resetTranscript()` to clear residual audio states when transitioning sentences or retrying.
+* **Auto-Activating Transition**: When transitioning to the next sentence (via `handleNextSentence` in [ReadingScreen.tsx](file:///Users/gyandeeps/code/lumina-read/src/components/ReadingScreen.tsx)), the microphone recorder automatically restarts and transitions back to `Listening` status, eliminating repetitive manual clicking for child users.
 
 ### 4. Fuzzy Match & Repetition Pointer Logic ([fuzzyMatch.ts](file:///Users/gyandeeps/code/lumina-read/src/utils/fuzzyMatch.ts))
 * **Levenshtein Distance**: Matches words fuzzy-wise (distance $\le 2$ edit characters). Applies stricter constraints (distance $\le 1$) for short words (length $\le 2$ characters) to avoid false matches.
 * **Pointer Repetition Safe-Gate**: Advances the index sequentially but ignores repetitions (e.g., if target is `"The cat ran"` and child repeats `"The... The cat"`, the matcher ignores repeated words and stays on `"cat"` once matched).
+
+### 5. Interactive Word Pronunciation Help ([ReadingScreen.tsx](file:///Users/gyandeeps/code/lumina-read/src/components/ReadingScreen.tsx) & [WordHighlighter.tsx](file:///Users/gyandeeps/code/lumina-read/src/components/WordHighlighter.tsx))
+* **Text-to-Speech Companion**: Provides child assistance by pronouncing the current target word using the Web Speech Synthesis API.
+* **Acoustic Feedback Prevention**: Before playing the audio pronunciation via `SpeechSynthesisUtterance` (configured with `rate = 0.85` and `lang = 'en-US'`), the hook automatically pauses speech recognition (`stopListening()`) to prevent the synthesized voice from feeding back into the microphone. It automatically resumes microphone capture (`startListening()`) once the utterance finishes or encounters an error.
+* **UI Highlighting**: During pronunciation playback, the target word state transitions to an active amber outline style (`text-amber-500 bg-amber-50 border-amber-300`) with a pulsing speaker icon to direct the child's focus.
+
+### 6. High-Fidelity Custom Vector Confetti ([flowerShapes.ts](file:///Users/gyandeeps/code/lumina-read/src/utils/flowerShapes.ts) & [confettiHelper.ts](file:///Users/gyandeeps/code/lumina-read/src/utils/confettiHelper.ts))
+* **Canvas 2D Vector Drawing**: Rather than using low-resolution text-based emojis (which display rendering artifacts when scaled), the application uses the Canvas 2D API to render high-resolution (128x128px) anti-aliased flower shapes dynamically in-memory.
+* **Vibrant Flora Palette**: Includes stylized SVG-like vector designs for Cherry Blossoms (🌸 Sakura), White Daisies (🌼), Sunflowers (🌻), Roses (🌹), and Hibiscuses (🌺).
+* **In-Memory Caching**: Flower shapes are compiled into `ImageBitmap` buffers on module load and cached. They are injected as custom particle shapes into the `canvas-confetti` execution loop, falling back gracefully to text emojis on legacy browsers.
+* **Contextual Celebrations**:
+  - `triggerFlowerRain()`: Sparse, elegant flower rain falling from the top.
+  - `triggerSideBurst()`: Lateral colorful bursts on sentence completion.
+  - `triggerSuccessExplosion()`: Centered grand explosion on story completion.
 
 ---
 

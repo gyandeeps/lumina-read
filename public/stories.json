@@ -1,6 +1,7 @@
 [
   {
     "title": "The Magic Crown",
+    "difficulty": "easy",
     "sentences": [
       "The princess has a red cat.",
       "The cat is very fast.",
@@ -11,6 +12,7 @@
   },
   {
     "title": "The Frog Friend",
+    "difficulty": "easy",
     "sentences": [
       "A green frog sat on a log.",
       "The princess said hello to him.",
@@ -21,6 +23,7 @@
   },
   {
     "title": "Princess Seeret and the Lost Puppy",
+    "difficulty": "medium",
     "sentences": [
       "Princess Seeret found a small puppy.",
       "The puppy was sad and lost.",
@@ -31,6 +34,7 @@
   },
   {
     "title": "The Magic Shield",
+    "difficulty": "medium",
     "sentences": [
       "Prince Armaan had a silver shield.",
       "Princess Seeret touched the shiny shield.",
@@ -41,6 +45,7 @@
   },
   {
     "title": "The Big Pink Castle",
+    "difficulty": "medium",
     "sentences": [
       "Princess Seeret lives in a big castle.",
       "The walls are a bright pink color.",
@@ -51,6 +56,7 @@
   },
   {
     "title": "The Talking Bird",
+    "difficulty": "medium",
     "sentences": [
       "A golden bird flew to the window.",
       "The bird knew how to say hello.",
@@ -61,6 +67,7 @@
   },
   {
     "title": "The Starry Night Picnic",
+    "difficulty": "medium",
     "sentences": [
       "The night sky was full of stars.",
       "Princess Seeret set up a soft blanket.",
@@ -71,6 +78,7 @@
   },
   {
     "title": "The Royal Bake Sale",
+    "difficulty": "hard",
     "sentences": [
       "Princess Seeret wanted to bake a cake.",
       "Prince Armaan helped mix the flour.",
@@ -81,6 +89,7 @@
   },
   {
     "title": "The Missing Key",
+    "difficulty": "hard",
     "sentences": [
       "Princess Seeret lost her tiny key.",
       "It opened a secret wooden box.",
@@ -91,6 +100,7 @@
   },
   {
     "title": "The Friendly Dragon",
+    "difficulty": "hard",
     "sentences": [
       "A purple dragon hid behind a bush.",
       "Prince Armaan was very brave.",
@@ -101,6 +111,7 @@
   },
   {
     "title": "The Shiny Silver Horse",
+    "difficulty": "hard",
     "sentences": [
       "Princess Seeret has a white horse.",
       "The horse has a shiny silver mane.",
@@ -111,6 +122,7 @@
   },
   {
     "title": "The Magic Wand",
+    "difficulty": "easy",
     "sentences": [
       "Princess Seeret found a star wand.",
       "She waved it in the air.",

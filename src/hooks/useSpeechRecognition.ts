@@ -30,6 +30,13 @@ const RESCHEDULE_DELAY_MS = 300;
 
 export function useSpeechRecognition() {
   const [status, setStatus] = useState<SpeechStatus>('idle');
+  const statusRef = useRef<SpeechStatus>('idle');
+
+  const setSpeechStatus = useCallback((newStatus: SpeechStatus) => {
+    statusRef.current = newStatus;
+    setStatus(newStatus);
+  }, []);
+
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string>('');
   const [words, setWords] = useState<WhisperWordChunk[]>([]);
@@ -104,7 +111,7 @@ export function useSpeechRecognition() {
   const initModel = useCallback(() => {
     if (workerRef.current) return;
 
-    setStatus('loading');
+    setSpeechStatus('loading');
     setError(null);
     setFileProgress({});
 
@@ -125,7 +132,7 @@ export function useSpeechRecognition() {
             [file]: { loaded, total },
           }));
         } else if (msgStatus === 'ready') {
-          setStatus('ready');
+          setSpeechStatus('ready');
           setFileProgress({});
         } else if (msgStatus === 'result') {
           if (sessionId !== undefined && sessionId !== sessionIdRef.current) {
@@ -150,7 +157,7 @@ export function useSpeechRecognition() {
             return;
           }
           isProcessingRef.current = false;
-          setStatus('error');
+          setSpeechStatus('error');
           setError(message || 'An error occurred in the transcription worker.');
         }
       };
@@ -158,21 +165,21 @@ export function useSpeechRecognition() {
       worker.postMessage({ type: 'init', wasmPaths });
     } catch (err: any) {
       console.error('Failed to initialize Whisper worker:', err);
-      setStatus('error');
+      setSpeechStatus('error');
       setError(err.message || 'Failed to instantiate Web Worker.');
     }
   }, [triggerProcessing, scheduleNextProcessing]);
 
   // Start capturing audio and running adaptive Whisper inference
   const startListening = useCallback(async () => {
-    if (status !== 'ready') return;
+    if (statusRef.current !== 'ready') return;
 
     sessionIdRef.current += 1;
     audioBufferRef.current.clear();
     setTranscript('');
     setWords([]);
     setError(null);
-    setStatus('listening');
+    setSpeechStatus('listening');
     isListeningRef.current = true;
 
     try {
@@ -186,11 +193,11 @@ export function useSpeechRecognition() {
       }, 800);
     } catch (err: any) {
       console.error('Failed to start speech recognition:', err);
-      setStatus('ready');
+      setSpeechStatus('ready');
       isListeningRef.current = false;
       setError(err.message || 'Microphone recording could not start.');
     }
-  }, [status, recorder, triggerProcessing]);
+  }, [recorder, triggerProcessing]);
 
   // Stop capturing audio and do one final transcription run
   const stopListening = useCallback(() => {
@@ -202,7 +209,7 @@ export function useSpeechRecognition() {
     }
 
     recorder.stopRecording();
-    setStatus('ready');
+    setSpeechStatus('ready');
 
     // Run a final time to parse the absolute end of speech
     triggerProcessing();

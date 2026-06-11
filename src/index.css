@@ -16,6 +16,33 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
   }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes star-pop-in {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.35); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes word-pop {
+    0% { transform: scale(1.1); }
+    40% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes idle-nudge {
+    0%, 100% { transform: translateY(0); opacity: 1; }
+    50% { transform: translateY(-6px); opacity: 0.9; }
+  }
+
+  --animate-fade-in-up: fade-in-up 0.4s ease-out both;
+  --animate-star-pop-in: star-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-word-pop: word-pop 0.35s ease-out;
+  --animate-idle-nudge: idle-nudge 2s ease-in-out infinite;
 }
 
 @layer base {
@@ -38,4 +65,19 @@
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 8px 32px 0 rgba(244, 63, 94, 0.08);
+}
+
+/* Star pop-in animation (used by StarsDisplay) */
+.star-pop-in {
+  animation: star-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Word match pop animation (used by WordHighlighter) */
+.word-pop {
+  animation: word-pop 0.35s ease-out;
+}
+
+/* Page transition */
+.page-enter {
+  animation: fade-in-up 0.4s ease-out both;
 }
