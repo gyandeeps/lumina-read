@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, Sparkles, Volume2, Heart, Loader2 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import type { Story } from './content/stories';
 import { ReadingScreen } from './components/ReadingScreen';
 
@@ -8,6 +9,24 @@ function App() {
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const triggerFlowerConfetti = () => {
+    confetti({
+      particleCount: 60,
+      spread: 120,
+      origin: { y: 0.1 },
+      shapes: [
+        confetti.shapeFromText({ text: '🌸' }),
+        confetti.shapeFromText({ text: '🌼' }),
+        confetti.shapeFromText({ text: '🌺' }),
+        confetti.shapeFromText({ text: '🌻' }),
+        confetti.shapeFromText({ text: '🌹' })
+      ],
+      scalar: 2.5,
+      gravity: 0.7,
+      drift: 0.5
+    });
+  };
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}stories.json`)
@@ -47,7 +66,9 @@ function App() {
           <img
             src={`${import.meta.env.BASE_URL}pwa-512x512.png`}
             alt="LuminaRead Owl Mascot"
-            className="w-36 h-36 object-contain rounded-3xl shadow-xl border-4 border-white transform hover:rotate-6 hover:scale-110 transition-all duration-300 pointer-events-auto"
+            onClick={triggerFlowerConfetti}
+            className="w-36 h-36 object-contain rounded-3xl shadow-xl border-4 border-white transform hover:rotate-6 hover:scale-110 transition-all duration-300 pointer-events-auto cursor-pointer"
+            title="Click me for flowers!"
           />
         </div>
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 border border-white/50 backdrop-blur-md rounded-full shadow-sm text-pink-500 font-sans font-bold text-sm mb-4 animate-bounce-subtle">

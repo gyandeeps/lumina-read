@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronLeft, ArrowRight, Star, RefreshCw, Trophy, Sparkles, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ArrowRight, Star, RefreshCw, Trophy, Sparkles, AlertCircle, Flower } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Story } from '../content/stories';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
@@ -79,6 +79,24 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack }) =
       spread: 55,
       origin: { x: 1 },
       colors: ['#ec4899', '#f43f5e', '#3b82f6', '#10b981', '#fbbf24'],
+    });
+  };
+
+  const triggerFlowerConfetti = () => {
+    confetti({
+      particleCount: 60,
+      spread: 120,
+      origin: { y: 0.1 },
+      shapes: [
+        confetti.shapeFromText({ text: '🌸' }),
+        confetti.shapeFromText({ text: '🌼' }),
+        confetti.shapeFromText({ text: '🌺' }),
+        confetti.shapeFromText({ text: '🌻' }),
+        confetti.shapeFromText({ text: '🌹' })
+      ],
+      scalar: 2.5,
+      gravity: 0.7,
+      drift: 0.5
     });
   };
 
@@ -227,7 +245,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack }) =
           </div>
         </div>
 
-        <div className="w-12 h-12" /> {/* Spacer */}
+        <button
+          onClick={triggerFlowerConfetti}
+          className="p-3 bg-white/80 rounded-2xl border border-slate-200/50 hover:bg-pink-50 hover:text-pink-500 hover:border-pink-200 transition-all flex items-center justify-center text-slate-500 shadow-sm hover:shadow active:scale-95 duration-200"
+          title="Sprinkle flowers!"
+        >
+          <Flower className="w-6 h-6 text-pink-500 animate-pulse" />
+        </button>
       </div>
 
       {/* Main Sentence Reader Card */}
