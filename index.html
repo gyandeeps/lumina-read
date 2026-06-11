@@ -4,13 +4,55 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/pwa-192x192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="description" content="LuminaRead - An offline-capable AI reading companion for kids." />
+    
+    <!-- Primary SEO Metadata -->
+    <title>LuminaRead - Child-Safe On-Device AI Reading Companion</title>
+    <meta name="description" content="LuminaRead is an offline-capable, private AI voice reading companion for kids. Powered by on-device Whisper WebGPU/WASM, it helps children learn to read with patience." />
+    <meta name="keywords" content="kids reading, learn to read, speech recognition, child literacy, AI reading tutor, private voice companion, offline reading app, kids read aloud" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://gyandeeps.com/lumina-read/" />
+    <meta name="theme-color" content="#fdf2f8" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://gyandeeps.com/lumina-read/" />
+    <meta property="og:title" content="LuminaRead - Child-Safe On-Device AI Reading Companion" />
+    <meta property="og:description" content="LuminaRead is an offline-capable, private AI voice reading companion for kids. Powered by on-device Whisper WebGPU/WASM, it helps children learn to read with patience." />
+    <meta property="og:image" content="https://gyandeeps.com/lumina-read/pwa-512x512.png" />
+    <meta property="og:site_name" content="LuminaRead" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://gyandeeps.com/lumina-read/" />
+    <meta name="twitter:title" content="LuminaRead - Child-Safe On-Device AI Reading Companion" />
+    <meta name="twitter:description" content="LuminaRead is an offline-capable, private AI voice reading companion for kids. Powered by on-device Whisper WebGPU/WASM, it helps children learn to read with patience." />
+    <meta name="twitter:image" content="https://gyandeeps.com/lumina-read/pwa-512x512.png" />
+
+    <!-- iOS / PWA Capable -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="LuminaRead" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <title>LuminaRead</title>
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "LuminaRead",
+        "operatingSystem": "iOS, Android, Windows, macOS",
+        "applicationCategory": "EducationalApplication",
+        "browserRequirements": "Requires WebGPU or WebAssembly support.",
+        "description": "An offline-capable Progressive Web App designed for children learning to read on iPads. It features voice recognition, dynamic highlighting, and real-time feedback.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0.00",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -48,10 +48,11 @@ export const StartButton: React.FC<StartButtonProps> = ({
   if (status === 'idle') {
     return (
       <button
+        id="btn-mic-toggle"
         onClick={onInit}
-        className={`group relative px-10 py-6 text-2xl font-bold font-kids text-white rounded-3xl shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 hover:shadow-2xl border-4 theme-border flex items-center gap-3 animate-bounce-subtle cursor-pointer ${idleBtnClasses}`}
+        className={`group relative px-6 sm:px-10 py-4 sm:py-6 text-lg sm:text-2xl font-bold font-kids text-white rounded-2xl sm:rounded-3xl shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 hover:shadow-2xl border-4 theme-border flex items-center gap-2.5 sm:gap-3 animate-bounce-subtle cursor-pointer ${idleBtnClasses}`}
       >
-        <Wand2 className="w-8 h-8 group-hover:rotate-12 transition-transform duration-300 text-amber-300" />
+        <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 group-hover:rotate-12 transition-transform duration-300 text-amber-300" />
         <span>Tap to Get Ready!</span>
         <span className="absolute -top-3 -right-3 px-3 py-1 bg-yellow-400 text-xs font-sans text-teal-950 rounded-full font-bold rotate-12 uppercase tracking-wide border-2 theme-border shadow">
           Local AI
@@ -82,10 +83,11 @@ export const StartButton: React.FC<StartButtonProps> = ({
   if (status === 'error') {
     return (
       <button
+        id="btn-mic-toggle"
         onClick={onInit}
-        className="px-8 py-5 text-xl font-bold font-kids text-white bg-red-500 rounded-3xl shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95 border-4 theme-border flex items-center gap-3 cursor-pointer"
+        className="px-5 sm:px-8 py-3.5 sm:py-5 text-base sm:text-xl font-bold font-kids text-white bg-red-500 rounded-2xl sm:rounded-3xl shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95 border-4 theme-border flex items-center gap-2 sm:gap-3 cursor-pointer"
       >
-        <AlertCircle className="w-7 h-7" />
+        <AlertCircle className="w-5 h-5 sm:w-7 sm:h-7" />
         <span>Failed. Tap to try again!</span>
       </button>
     );
@@ -93,27 +95,29 @@ export const StartButton: React.FC<StartButtonProps> = ({
 
   // Ready or listening
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 w-full max-w-xs sm:max-w-none">
       {isRecording ? (
         <button
+          id="btn-mic-toggle"
           onClick={onStop}
-          className={`group relative px-10 py-6 text-2xl font-bold font-kids text-white rounded-3xl shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 border-4 theme-border flex items-center gap-3 hover:shadow-2xl cursor-pointer ${listeningBtnClasses}`}
+          className={`group relative px-6 sm:px-10 py-4 sm:py-6 text-lg sm:text-2xl font-bold font-kids text-white rounded-2xl sm:rounded-3xl shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 border-4 theme-border flex items-center justify-center gap-2 sm:gap-3 hover:shadow-2xl cursor-pointer w-full sm:w-auto ${listeningBtnClasses}`}
         >
-          <div className="voice-wave-container mr-1 text-white">
+          <div className="voice-wave-container mr-1 text-white shrink-0">
             <span className="voice-wave-bar bar-1"></span>
             <span className="voice-wave-bar bar-2"></span>
             <span className="voice-wave-bar bar-3"></span>
             <span className="voice-wave-bar bar-4"></span>
             <span className="voice-wave-bar bar-5"></span>
           </div>
-          <span>I'm Listening... Tap to Pause!</span>
+          <span className="truncate">I'm Listening... Tap to Pause!</span>
         </button>
       ) : (
         <button
+          id="btn-mic-toggle"
           onClick={onStart}
-          className={`group relative px-10 py-6 text-2xl font-bold font-kids text-white rounded-3xl shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 border-4 theme-border flex items-center gap-3 hover:shadow-2xl animate-bounce-subtle cursor-pointer ${readyBtnClasses}`}
+          className={`group relative px-6 sm:px-10 py-4 sm:py-6 text-lg sm:text-2xl font-bold font-kids text-white rounded-2xl sm:rounded-3xl shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 border-4 theme-border flex items-center justify-center gap-2 sm:gap-3 hover:shadow-2xl animate-bounce-subtle cursor-pointer w-full sm:w-auto ${readyBtnClasses}`}
         >
-          <Play className="w-8 h-8 fill-current group-hover:scale-110 transition-transform duration-300" />
+          <Play className="w-6 h-6 sm:w-8 sm:h-8 fill-current group-hover:scale-110 transition-transform duration-300 shrink-0" />
           <span>Tap to Start Reading!</span>
         </button>
       )}

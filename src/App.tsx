@@ -41,6 +41,29 @@ function App() {
     localStorage.setItem("lumina-theme", theme);
   }, [theme]);
 
+  // Dynamic page title and meta description update
+  useEffect(() => {
+    if (selectedStory) {
+      document.title = `Read "${selectedStory.title}" | LuminaRead`;
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute(
+          "content",
+          `Read "${selectedStory.title}" out loud with LuminaRead's child-friendly offline voice tracking. Difficulty: ${selectedStory.difficulty}.`
+        );
+      }
+    } else {
+      document.title = "LuminaRead - Child-Safe On-Device AI Reading Companion";
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute(
+          "content",
+          "LuminaRead is an offline-capable, private AI voice reading companion for kids. Powered by on-device Whisper WebGPU/WASM, it helps children learn to read with patience."
+        );
+      }
+    }
+  }, [selectedStory]);
+
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,7 +183,7 @@ function App() {
       {/* Resume Prompt Modal */}
       {showResumePrompt && resumeStory && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-fade-in-up">
-          <div className="glass-card max-w-md w-full p-8 rounded-3xl text-center shadow-2xl border-teal-100 shadow-teal-100/20">
+          <div className="glass-card max-w-md w-full p-6 sm:p-8 rounded-3xl text-center shadow-2xl border-teal-100 shadow-teal-100/20">
             <BookOpenCheck className="w-14 h-14 text-teal-600 mx-auto mb-4" />
             <h3 className="font-kids text-2xl font-bold text-slate-800 mb-2">
               Welcome Back! 📖
@@ -175,12 +198,14 @@ function App() {
             </p>
             <div className="flex gap-3">
               <button
+                id="resume-start-fresh"
                 onClick={handleDismissResume}
                 className="flex-1 py-3 text-sm font-bold font-sans text-slate-500 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors"
               >
                 Start Fresh
               </button>
               <button
+                id="resume-continue"
                 onClick={handleResumeStory}
                 className="flex-1 py-3 text-sm font-bold font-kids text-white bg-gradient-to-r from-teal-600 to-cyan-500 rounded-2xl shadow-md hover:shadow-lg hover:shadow-teal-100/20 transition-all transform hover:scale-105 active:scale-95 animate-pulse-subtle"
               >
@@ -193,10 +218,11 @@ function App() {
 
       <div className="flex-1 flex flex-col justify-between w-full">
         {/* Header section */}
-        <header className="relative max-w-4xl mx-auto w-full flex flex-col md:flex-row items-center md:items-start justify-between gap-8 mb-10 px-4">
+        <header className="relative max-w-4xl mx-auto w-full flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8 mb-10 px-4">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left flex-1">
             <div className="flex-shrink-0 animate-mascot-entrance">
               <img
+                id="pwa-mascot-logo"
                 src={`${import.meta.env.BASE_URL}pwa-512x512.png`}
                 alt="LuminaRead Owl Mascot"
                 onClick={triggerFlowerRain}
@@ -237,44 +263,44 @@ function App() {
             style={{ animationDelay: "380ms" }}
           >
             <div className="glass-card p-6 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 min-w-[240px] flex flex-col gap-3">
-              <h3 className="font-kids text-lg font-bold theme-text-primary flex items-center gap-2 border-b theme-border pb-2">
+              <h3 className="font-kids text-xl font-bold theme-text-primary flex items-center gap-2 border-b theme-border pb-2">
                 <span>Star Reader Stats</span>
                 <span className="animate-pulse">🏆</span>
               </h3>
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between text-sm font-sans">
-                  <span className="theme-text-secondary font-medium flex items-center gap-2 text-xs">
-                    <Sparkles className="w-4 h-4 text-amber-500 fill-current" />
+                  <span className="theme-text-secondary font-medium flex items-center gap-2 text-sm">
+                    <Sparkles className="w-4.5 h-4.5 text-amber-500 fill-current" />
                     Words Read:
                   </span>
-                  <span className="font-extrabold text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 text-xs">
+                  <span id="stats-words-read" className="font-extrabold text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 text-sm">
                     {totalWordsRead}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm font-sans">
-                  <span className="theme-text-secondary font-medium flex items-center gap-2 text-xs">
-                    <BookOpenCheck className="w-4 h-4 text-teal-500" />
+                  <span className="theme-text-secondary font-medium flex items-center gap-2 text-sm">
+                    <BookOpenCheck className="w-4.5 h-4.5 text-teal-500" />
                     Stories Completed:
                   </span>
-                  <span className="font-extrabold text-teal-500 bg-teal-500/10 px-2.5 py-0.5 rounded-full border border-teal-500/20 text-xs">
+                  <span id="stats-stories-completed" className="font-extrabold text-teal-500 bg-teal-500/10 px-2.5 py-0.5 rounded-full border border-teal-500/20 text-sm">
                     {completedStories.length} / {stories.length || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm font-sans">
-                  <span className="theme-text-secondary font-medium flex items-center gap-2 text-xs">
-                    <Volume2 className="w-4 h-4 text-amber-500" />
+                  <span className="theme-text-secondary font-medium flex items-center gap-2 text-sm">
+                    <Volume2 className="w-4.5 h-4.5 text-amber-500" />
                     "Hear Word" Help:
                   </span>
-                  <span className="font-extrabold text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 text-xs">
+                  <span id="stats-hear-help" className="font-extrabold text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 text-sm">
                     {helpWordsCount}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm font-sans">
-                  <span className="theme-text-secondary font-medium flex items-center gap-2 text-xs">
-                    <BookOpen className="w-4 h-4 text-cyan-500" />
+                  <span className="theme-text-secondary font-medium flex items-center gap-2 text-sm">
+                    <BookOpen className="w-4.5 h-4.5 text-cyan-500" />
                     "Read to Me":
                   </span>
-                  <span className="font-extrabold text-cyan-500 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20 text-xs">
+                  <span id="stats-read-to-me" className="font-extrabold text-cyan-500 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20 text-sm">
                     {readToMeCount}
                   </span>
                 </div>
@@ -311,6 +337,7 @@ function App() {
             {(["all", "easy", "medium", "hard"] as DifficultyFilter[]).map(
               (level) => (
                 <button
+                  id={`filter-${level}`}
                   key={level}
                   onClick={() => setDifficultyFilter(level)}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold font-sans border transition-all duration-200 cursor-pointer ${
@@ -372,8 +399,9 @@ function App() {
                     style={{ animationDelay: `${560 + index * 60}ms` }}
                   >
                     <div
+                      id={`story-card-${story.title.toLowerCase().replace(/\s+/g, '-')}`}
                       onClick={() => handleSelectStory(story)}
-                      className={`group glass-card p-8 rounded-3xl cursor-pointer hover:shadow-xl hover:shadow-teal-500/5 transition-all duration-300 transform hover:-translate-y-2 border-2 flex flex-col justify-between min-h-[240px] ${
+                      className={`group glass-card p-6 sm:p-8 rounded-3xl cursor-pointer hover:shadow-xl hover:shadow-teal-500/5 transition-all duration-300 transform hover:-translate-y-2 border-2 flex flex-col justify-between min-h-[240px] ${
                         isCompleted
                           ? isNight
                             ? "border-emerald-500/50 bg-emerald-950/20 hover:border-emerald-400"
@@ -405,7 +433,7 @@ function App() {
                           </div>
                         </div>
 
-                        <h3 className="font-kids text-3xl font-extrabold theme-text-primary group-hover:text-teal-500 transition-colors duration-300 mb-2">
+                        <h3 className="font-kids text-2xl sm:text-3xl font-extrabold theme-text-primary group-hover:text-teal-500 transition-colors duration-300 mb-2">
                           {story.title}
                         </h3>
 
@@ -414,16 +442,16 @@ function App() {
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between border-t theme-border pt-4 mt-6">
-                        <div className="flex gap-4">
-                          <span className="text-xs font-sans font-bold theme-text-muted bg-slate-500/5 px-3 py-1 rounded-full">
+                      <div className="flex flex-wrap items-center justify-between gap-y-3 border-t theme-border pt-4 mt-6">
+                        <div className="flex gap-2 sm:gap-4">
+                          <span className="text-[11px] sm:text-xs font-sans font-bold theme-text-muted bg-slate-500/5 px-2.5 sm:px-3 py-1 rounded-full">
                             {story.sentences.length} sentences
                           </span>
-                          <span className="text-xs font-sans font-bold theme-text-muted bg-slate-500/5 px-3 py-1 rounded-full">
+                          <span className="text-[11px] sm:text-xs font-sans font-bold theme-text-muted bg-slate-500/5 px-2.5 sm:px-3 py-1 rounded-full">
                             {totalWords} words
                           </span>
                         </div>
-                        <span className="text-sm font-sans font-extrabold text-teal-500 group-hover:translate-x-1.5 transition-transform duration-300 flex items-center gap-1">
+                        <span className="text-xs sm:text-sm font-sans font-extrabold text-teal-500 group-hover:translate-x-1.5 transition-transform duration-300 flex items-center gap-1">
                           {isCompleted ? "Read Again" : "Play"} ➡️
                         </span>
                       </div>

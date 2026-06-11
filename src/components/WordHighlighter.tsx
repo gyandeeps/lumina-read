@@ -91,13 +91,13 @@ export const WordHighlighter: React.FC<WordHighlighterProps> = ({
           <span
             key={index}
             className={`
-              font-kids text-5xl md:text-6xl lg:text-7xl transition-all duration-300 origin-center inline-flex items-center gap-2
+              font-kids text-3xl sm:text-5xl md:text-6xl lg:text-7xl transition-all duration-300 origin-center inline-flex items-center gap-2
               ${wordClasses}
             `}
           >
             <span>{word}</span>
             {wordState === 'active' && isSpeakingHelp && (
-              <Volume2 className="w-8 h-8 md:w-10 md:h-10 text-amber-500 animate-pulse" />
+              <Volume2 className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-amber-500 animate-pulse" />
             )}
           </span>
         );

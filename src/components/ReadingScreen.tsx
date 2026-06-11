@@ -111,6 +111,20 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     timerReset();
   }, [story, resetTranscript, initialSentenceIndex, timerReset]);
 
+  // Dynamic page title update when story is completed
+  useEffect(() => {
+    if (isStoryCompleted) {
+      document.title = `Completed "${story.title}"! 🎉 | LuminaRead`;
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute(
+          "content",
+          `Congratulations! You successfully read "${story.title}" all by yourself on LuminaRead!`
+        );
+      }
+    }
+  }, [isStoryCompleted, story.title]);
+
   const sentence = story.sentences[currentSentenceIndex];
 
   // Tokenize expected sentence words
@@ -315,7 +329,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   if (isStoryCompleted) {
     return (
       <div className={`flex flex-col items-center justify-center min-h-[80svh] px-4 page-enter theme-${theme}`}>
-        <div className="glass-card max-w-lg w-full p-10 rounded-3xl text-center shadow-2xl relative overflow-hidden border border-slate-500/10">
+        <div className="glass-card max-w-lg w-full p-5 sm:p-10 rounded-3xl text-center shadow-2xl relative overflow-hidden border border-slate-500/10">
           {/* Confetti decoration */}
           <div className="absolute -top-12 -left-12 w-24 h-24 bg-yellow-300/10 rounded-full blur-xl animate-pulse" />
           <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-teal-300/10 rounded-full blur-xl animate-pulse" />
@@ -324,9 +338,9 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             <Trophy className="w-16 h-16 text-yellow-900 animate-bounce-subtle" />
           </div>
 
-          <h2 className="font-kids text-4xl md:text-5xl font-bold theme-text-primary mb-2">
+          <h1 className="font-kids text-4xl md:text-5xl font-bold theme-text-primary mb-2">
             You Did It!
-          </h2>
+          </h1>
           <p className="text-xl theme-text-secondary font-sans mb-4">
             You read <span className="font-bold text-teal-500">"{story.title}"</span> all by yourself!
           </p>
@@ -336,36 +350,37 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             <StarsDisplay earned={story.sentences.length} total={story.sentences.length} />
           </div>
 
-          <div className="bg-slate-500/5 p-6 rounded-2xl border border-slate-500/10 shadow-inner mb-8 flex justify-around">
-            <div className="text-center">
-              <span className="block text-3xl font-extrabold text-teal-500 font-sans">
+          <div className="bg-slate-500/5 p-4 sm:p-6 rounded-2xl border border-slate-500/10 shadow-inner mb-8 flex justify-around gap-1">
+            <div className="text-center flex-1">
+              <span className="block text-2xl sm:text-3xl font-extrabold text-teal-500 font-sans">
                 {story.sentences.length}
               </span>
-              <span className="text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans">
+              <span className="text-[10px] sm:text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans block leading-tight">
                 Sentences Read
               </span>
             </div>
             <div className="border-r theme-border" />
-            <div className="text-center">
-              <span className="block text-3xl font-extrabold text-blue-500 font-sans">
+            <div className="text-center flex-1">
+              <span className="block text-2xl sm:text-3xl font-extrabold text-blue-500 font-sans">
                 {story.sentences.reduce((acc, curr) => acc + curr.split(/\s+/).length, 0)}
               </span>
-              <span className="text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans">
+              <span className="text-[10px] sm:text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans block leading-tight">
                 Total Words
               </span>
             </div>
             <div className="border-r theme-border" />
-            <div className="text-center">
-              <span className="block text-3xl font-extrabold text-emerald-500 font-sans">
+            <div className="text-center flex-1">
+              <span className="block text-2xl sm:text-3xl font-extrabold text-emerald-500 font-sans">
                 {readingTimer.getFormattedTime()}
               </span>
-              <span className="text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans">
+              <span className="text-[10px] sm:text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans block leading-tight">
                 Reading Time
               </span>
             </div>
           </div>
 
           <button
+            id="btn-read-another"
             onClick={onBack}
             className="w-full py-4 text-xl font-bold font-kids text-white bg-gradient-to-r from-teal-600 to-cyan-500 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 border-2 border-white flex items-center justify-center gap-2 cursor-pointer"
           >
@@ -378,57 +393,68 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   }
 
   return (
-    <div className={`flex flex-col min-h-[85svh] justify-between px-4 pb-8 theme-${theme}`}>
+    <div className={`flex flex-col min-h-[85svh] justify-between px-2 sm:px-4 pb-8 theme-${theme}`}>
       {/* Header Area */}
-      <div className="flex items-center justify-between py-4 max-w-6xl w-full mx-auto">
-        <button
-          onClick={() => {
-            stopListening();
-            timerPause();
-            onBack();
-          }}
-          className="p-3 bg-white/10 backdrop-blur-sm rounded-2xl border theme-border hover:bg-white/20 transition-colors flex items-center justify-center theme-text-primary shadow-sm hover:shadow active:scale-95 duration-200 cursor-pointer"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </button>
+      <div className="flex flex-col gap-4 max-w-6xl w-full mx-auto py-3 sm:py-4 px-1 sm:px-4">
+        {/* Top Row: Navigation and Title */}
+        <div className="flex items-center justify-between w-full">
+          <button
+            id="btn-back-to-library"
+            onClick={() => {
+              stopListening();
+              timerPause();
+              onBack();
+            }}
+            className="p-2.5 sm:p-3 bg-white/10 backdrop-blur-sm rounded-2xl border theme-border hover:bg-white/20 transition-colors flex items-center justify-center theme-text-primary shadow-sm hover:shadow active:scale-95 duration-200 cursor-pointer shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
 
-        <div className="text-center flex-1 mx-4">
-          <h2 className="font-kids text-2xl font-bold theme-text-primary truncate">
+          <h1 className="font-kids text-xl sm:text-3xl font-extrabold theme-text-primary truncate mx-4 text-center flex-1">
             {story.title}
-          </h2>
-          {/* Progress bar + timer */}
-          <div className="flex items-center justify-center gap-3 mt-1">
-            <div className="w-32 bg-slate-500/15 rounded-full h-2 overflow-hidden border border-slate-500/20">
+          </h1>
+
+          <button
+            id="btn-sprinkle-flowers"
+            onClick={triggerFlowerRain}
+            className="p-2.5 sm:p-3 bg-white/10 backdrop-blur-sm rounded-2xl border theme-border hover:bg-teal-500/10 transition-all flex items-center justify-center theme-text-primary shadow-sm hover:shadow active:scale-95 duration-200 cursor-pointer shrink-0"
+            title="Sprinkle flowers!"
+          >
+            <Flower className="w-4 h-4 sm:w-5 sm:h-5 text-teal-500 animate-pulse" />
+          </button>
+        </div>
+
+        {/* Bottom Row: Premium Stats Capsule */}
+        <div className="glass-card mx-auto w-full max-w-2xl px-4 py-2 sm:py-2.5 rounded-2xl flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 shadow-md border theme-border">
+          {/* Progress bar + Sentence indicator */}
+          <div className="flex items-center gap-3 min-w-0 flex-1 justify-center sm:justify-start w-full sm:w-auto">
+            <div className="w-20 sm:w-28 bg-slate-500/15 rounded-full h-2 overflow-hidden border border-slate-500/20 shrink-0">
               <div
                 className="bg-gradient-to-r from-teal-500 to-cyan-500 h-full rounded-full transition-all duration-500"
                 style={{ width: `${overallProgressPercent}%` }}
               />
             </div>
-            <span className="text-xs theme-text-secondary font-bold font-sans">
+            <span className="text-sm sm:text-base theme-text-secondary font-bold font-sans truncate">
               Sentence {currentSentenceIndex + 1} of {story.sentences.length}
             </span>
-            {/* Reading Timer */}
-            <span className="text-xs theme-text-muted font-sans flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {readingTimer.getFormattedTime()}
-            </span>
           </div>
-          {/* Stars Display */}
-          <StarsDisplay earned={starsEarned} total={story.sentences.length} />
-        </div>
 
-        <button
-          onClick={triggerFlowerRain}
-          className="p-3 bg-white/10 backdrop-blur-sm rounded-2xl border theme-border hover:bg-teal-500/10 transition-all flex items-center justify-center theme-text-primary shadow-sm hover:shadow active:scale-95 duration-200 cursor-pointer"
-          title="Sprinkle flowers!"
-        >
-          <Flower className="w-5 h-5 text-teal-500 animate-pulse" />
-        </button>
+          {/* Stars display in the center/middle */}
+          <div className="shrink-0 flex items-center justify-center w-full sm:w-auto">
+            <StarsDisplay earned={starsEarned} total={story.sentences.length} />
+          </div>
+
+          {/* Timer on the right */}
+          <div className="flex items-center gap-1.5 text-sm sm:text-base theme-text-muted font-sans font-bold shrink-0 justify-center sm:justify-end w-full sm:w-auto">
+            <Clock className="w-3.5 h-3.5 text-teal-500" />
+            <span>{readingTimer.getFormattedTime()}</span>
+          </div>
+        </div>
       </div>
 
       {/* Main Sentence Reader Card */}
       <div className="flex-1 flex flex-col items-center justify-center my-6 w-full">
-        <div className="glass-card w-full max-w-4xl p-8 md:p-12 rounded-3xl relative shadow-xl min-h-[300px] flex flex-col items-center justify-center gap-6 border-4 theme-border">
+        <div className="glass-card w-full max-w-4xl p-4 sm:p-8 md:p-12 rounded-3xl relative shadow-xl min-h-[220px] sm:min-h-[300px] flex flex-col items-center justify-center gap-6 border-4 theme-border">
           {/* Star animation corners */}
           {isSentenceCompleted && (
             <div className="absolute top-4 right-4 bg-yellow-400 p-2 rounded-full border-2 theme-border shadow animate-bounce-subtle">
@@ -458,28 +484,30 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
           {/* Help Buttons inside the card */}
           {!isSentenceCompleted && (status === 'ready' || status === 'listening') && (
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               {/* Single Word Help */}
               <button
+                id="btn-hear-word"
                 onClick={playHelpPronunciation}
                 disabled={isSpeakingHelp || isSpeakingSentence}
-                className={`group px-6 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 disabled:from-amber-300 disabled:to-orange-400 text-white font-kids text-lg font-bold rounded-2xl shadow-md hover:shadow-lg border-2 theme-border transition-all transform hover:scale-105 active:scale-95 duration-200 flex items-center gap-2 cursor-pointer ${
+                className={`group px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 disabled:from-amber-300 disabled:to-orange-400 text-white font-kids text-sm sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border-2 theme-border transition-all transform hover:scale-105 active:scale-95 duration-200 flex items-center gap-1.5 sm:gap-2 cursor-pointer ${
                   isSpeakingHelp ? 'animate-pulse' : ''
                 }`}
               >
-                <Volume2 className="w-5 h-5 group-hover:animate-bounce-subtle" />
+                <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:animate-bounce-subtle" />
                 <span>Hear "{expectedWords[currentWordIndex]}"</span>
               </button>
 
               {/* Full Sentence "Read to Me" */}
               <button
+                id="btn-read-to-me"
                 onClick={playSentenceReadToMe}
                 disabled={isSpeakingSentence || isSpeakingHelp}
-                className={`group px-6 py-3 bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 disabled:from-violet-300 disabled:to-purple-400 text-white font-kids text-lg font-bold rounded-2xl shadow-md hover:shadow-lg border-2 theme-border transition-all transform hover:scale-105 active:scale-95 duration-200 flex items-center gap-2 cursor-pointer ${
+                className={`group px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 disabled:from-violet-300 disabled:to-purple-400 text-white font-kids text-sm sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border-2 theme-border transition-all transform hover:scale-105 active:scale-95 duration-200 flex items-center gap-1.5 sm:gap-2 cursor-pointer ${
                   isSpeakingSentence ? 'animate-pulse' : ''
                 }`}
               >
-                <BookOpen className="w-5 h-5 group-hover:animate-bounce-subtle" />
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 group-hover:animate-bounce-subtle" />
                 <span>Read to Me 📖</span>
               </button>
             </div>
@@ -500,6 +528,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
         {isSentenceCompleted ? (
           <div className="flex flex-col items-center gap-3 w-full animate-bounce-subtle">
             <button
+              id="btn-next-sentence"
               onClick={handleNextSentence}
               className="px-10 py-5 text-2xl font-bold font-kids text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl shadow-xl shadow-emerald-100 hover:shadow-2xl border-4 theme-border transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer"
             >
@@ -523,6 +552,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             {status === 'ready' && (
               <div className="flex gap-4 text-xs font-sans font-semibold theme-text-muted mt-2">
                 <button
+                  id="btn-reset-sentence"
                   onClick={handleRetrySentence}
                   className="hover:text-teal-500 flex items-center gap-1 transition-colors cursor-pointer"
                 >
@@ -531,6 +561,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 </button>
                 <span className="theme-text-muted opacity-40">|</span>
                 <button
+                  id="btn-skip-sentence"
                   onClick={handleSkipSentence}
                   className="hover:text-cyan-500 transition-colors cursor-pointer"
                 >
