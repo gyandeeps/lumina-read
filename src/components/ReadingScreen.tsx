@@ -15,12 +15,18 @@ interface ReadingScreenProps {
   story: Story;
   onBack: () => void;
   initialSentenceIndex?: number;
+  theme: 'day' | 'sunset' | 'night';
 }
 
 /** Seconds of no word progress before showing encouragement */
 const IDLE_ENCOURAGEMENT_SECONDS = 15;
 
-export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, initialSentenceIndex = 0 }) => {
+export const ReadingScreen: React.FC<ReadingScreenProps> = ({
+  story,
+  onBack,
+  initialSentenceIndex = 0,
+  theme,
+}) => {
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(initialSentenceIndex);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isSentenceCompleted, setIsSentenceCompleted] = useState(false);
@@ -308,21 +314,21 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
 
   if (isStoryCompleted) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[80svh] px-4 page-enter">
-        <div className="glass-card max-w-lg w-full p-10 rounded-3xl text-center shadow-2xl relative overflow-hidden border-teal-100 shadow-teal-100/10">
+      <div className={`flex flex-col items-center justify-center min-h-[80svh] px-4 page-enter theme-${theme}`}>
+        <div className="glass-card max-w-lg w-full p-10 rounded-3xl text-center shadow-2xl relative overflow-hidden border border-slate-500/10">
           {/* Confetti decoration */}
-          <div className="absolute -top-12 -left-12 w-24 h-24 bg-yellow-300/20 rounded-full blur-xl animate-pulse" />
-          <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-teal-300/20 rounded-full blur-xl animate-pulse" />
+          <div className="absolute -top-12 -left-12 w-24 h-24 bg-yellow-300/10 rounded-full blur-xl animate-pulse" />
+          <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-teal-300/10 rounded-full blur-xl animate-pulse" />
           
           <div className="inline-flex p-5 bg-gradient-to-tr from-yellow-400 to-amber-300 rounded-full border-4 border-white shadow-lg mb-6">
             <Trophy className="w-16 h-16 text-yellow-900 animate-bounce-subtle" />
           </div>
 
-          <h2 className="font-kids text-4xl md:text-5xl font-bold text-slate-800 mb-2">
+          <h2 className="font-kids text-4xl md:text-5xl font-bold theme-text-primary mb-2">
             You Did It!
           </h2>
-          <p className="text-xl text-slate-500 font-sans mb-4">
-            You read <span className="font-bold text-teal-600">"{story.title}"</span> all by yourself!
+          <p className="text-xl theme-text-secondary font-sans mb-4">
+            You read <span className="font-bold text-teal-500">"{story.title}"</span> all by yourself!
           </p>
 
           {/* Stars celebration */}
@@ -330,30 +336,30 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
             <StarsDisplay earned={story.sentences.length} total={story.sentences.length} />
           </div>
 
-          <div className="bg-gradient-to-r from-teal-50/40 via-sky-50/40 to-amber-50/40 p-6 rounded-2xl border border-white/60 shadow-inner mb-8 flex justify-around">
+          <div className="bg-slate-500/5 p-6 rounded-2xl border border-slate-500/10 shadow-inner mb-8 flex justify-around">
             <div className="text-center">
-              <span className="block text-3xl font-extrabold text-teal-600 font-sans">
+              <span className="block text-3xl font-extrabold text-teal-500 font-sans">
                 {story.sentences.length}
               </span>
-              <span className="text-xs uppercase text-slate-500 font-bold tracking-wider font-sans">
+              <span className="text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans">
                 Sentences Read
               </span>
             </div>
-            <div className="border-r border-slate-200" />
+            <div className="border-r theme-border" />
             <div className="text-center">
               <span className="block text-3xl font-extrabold text-blue-500 font-sans">
                 {story.sentences.reduce((acc, curr) => acc + curr.split(/\s+/).length, 0)}
               </span>
-              <span className="text-xs uppercase text-slate-500 font-bold tracking-wider font-sans">
+              <span className="text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans">
                 Total Words
               </span>
             </div>
-            <div className="border-r border-slate-200" />
+            <div className="border-r theme-border" />
             <div className="text-center">
               <span className="block text-3xl font-extrabold text-emerald-500 font-sans">
                 {readingTimer.getFormattedTime()}
               </span>
-              <span className="text-xs uppercase text-slate-500 font-bold tracking-wider font-sans">
+              <span className="text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans">
                 Reading Time
               </span>
             </div>
@@ -361,7 +367,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
 
           <button
             onClick={onBack}
-            className="w-full py-4 text-xl font-bold font-kids text-white bg-gradient-to-r from-teal-600 to-cyan-500 rounded-2xl shadow-lg shadow-teal-100/30 hover:shadow-teal-100/50 transition-all duration-300 transform hover:scale-105 active:scale-95 border-2 border-white flex items-center justify-center gap-2"
+            className="w-full py-4 text-xl font-bold font-kids text-white bg-gradient-to-r from-teal-600 to-cyan-500 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 border-2 border-white flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>Read Another Story!</span>
             <Sparkles className="w-6 h-6 text-amber-300" />
@@ -372,7 +378,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
   }
 
   return (
-    <div className="flex flex-col min-h-[85svh] justify-between px-4 pb-8">
+    <div className={`flex flex-col min-h-[85svh] justify-between px-4 pb-8 theme-${theme}`}>
       {/* Header Area */}
       <div className="flex items-center justify-between py-4 max-w-6xl w-full mx-auto">
         <button
@@ -381,28 +387,28 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
             timerPause();
             onBack();
           }}
-          className="p-3 bg-white/80 rounded-2xl border border-slate-200/50 hover:bg-slate-50 transition-colors flex items-center justify-center text-slate-600 shadow-sm hover:shadow active:scale-95 duration-200"
+          className="p-3 bg-white/10 backdrop-blur-sm rounded-2xl border theme-border hover:bg-white/20 transition-colors flex items-center justify-center theme-text-primary shadow-sm hover:shadow active:scale-95 duration-200 cursor-pointer"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
 
         <div className="text-center flex-1 mx-4">
-          <h2 className="font-kids text-2xl font-bold text-slate-800 truncate">
+          <h2 className="font-kids text-2xl font-bold theme-text-primary truncate">
             {story.title}
           </h2>
           {/* Progress bar + timer */}
           <div className="flex items-center justify-center gap-3 mt-1">
-            <div className="w-32 bg-slate-200 rounded-full h-2 overflow-hidden border border-slate-300/30">
+            <div className="w-32 bg-slate-500/15 rounded-full h-2 overflow-hidden border border-slate-500/20">
               <div
                 className="bg-gradient-to-r from-teal-500 to-cyan-500 h-full rounded-full transition-all duration-500"
                 style={{ width: `${overallProgressPercent}%` }}
               />
             </div>
-            <span className="text-xs text-slate-500 font-bold font-sans">
+            <span className="text-xs theme-text-secondary font-bold font-sans">
               Sentence {currentSentenceIndex + 1} of {story.sentences.length}
             </span>
             {/* Reading Timer */}
-            <span className="text-xs text-slate-400 font-sans flex items-center gap-1">
+            <span className="text-xs theme-text-muted font-sans flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {readingTimer.getFormattedTime()}
             </span>
@@ -413,38 +419,39 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
 
         <button
           onClick={triggerFlowerRain}
-          className="p-3 bg-white/80 rounded-2xl border border-slate-200/50 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition-all flex items-center justify-center text-slate-500 shadow-sm hover:shadow active:scale-95 duration-200"
+          className="p-3 bg-white/10 backdrop-blur-sm rounded-2xl border theme-border hover:bg-teal-500/10 transition-all flex items-center justify-center theme-text-primary shadow-sm hover:shadow active:scale-95 duration-200 cursor-pointer"
           title="Sprinkle flowers!"
         >
-          <Flower className="w-6 h-6 text-teal-600 animate-pulse" />
+          <Flower className="w-5 h-5 text-teal-500 animate-pulse" />
         </button>
       </div>
 
       {/* Main Sentence Reader Card */}
       <div className="flex-1 flex flex-col items-center justify-center my-6 w-full">
-        <div className="glass-card w-full max-w-4xl p-8 md:p-12 rounded-3xl relative shadow-xl min-h-[300px] flex flex-col items-center justify-center gap-6 border-4 border-white">
+        <div className="glass-card w-full max-w-4xl p-8 md:p-12 rounded-3xl relative shadow-xl min-h-[300px] flex flex-col items-center justify-center gap-6 border-4 theme-border">
           {/* Star animation corners */}
           {isSentenceCompleted && (
-            <div className="absolute top-4 right-4 bg-yellow-400 p-2 rounded-full border-2 border-white shadow animate-bounce-subtle">
+            <div className="absolute top-4 right-4 bg-yellow-400 p-2 rounded-full border-2 theme-border shadow animate-bounce-subtle">
               <Star className="w-6 h-6 text-yellow-900 fill-current" />
             </div>
           )}
 
-          <div className="flex-1 flex items-center justify-center w-full">
+          <div key={currentSentenceIndex} className="flex-1 flex items-center justify-center w-full sentence-enter-active">
             <WordHighlighter
               sentence={sentence}
               currentWordIndex={currentWordIndex}
               isListening={status === 'listening' || isRecording}
               isSpeakingHelp={isSpeakingHelp}
+              theme={theme}
             />
           </div>
 
           {/* Idle Encouragement Prompt */}
           {showIdleEncouragement && !isSentenceCompleted && (status === 'listening' || isRecording) && (
-            <div className="animate-idle-nudge bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200/60 rounded-2xl px-6 py-3 shadow-sm flex items-center gap-3">
+            <div className="animate-idle-nudge bg-violet-500/5 border border-violet-500/20 rounded-2xl px-6 py-3 shadow-sm flex items-center gap-3">
               <MessageCircle className="w-5 h-5 text-violet-500 flex-shrink-0" />
-              <p className="font-kids text-base text-violet-700">
-                You're doing great! Try saying: <span className="font-extrabold text-violet-900">"{expectedWords[currentWordIndex]}"</span>
+              <p className="font-kids text-base theme-text-primary">
+                You're doing great! Try saying: <span className="font-extrabold text-violet-500">"{expectedWords[currentWordIndex]}"</span>
               </p>
             </div>
           )}
@@ -456,7 +463,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
               <button
                 onClick={playHelpPronunciation}
                 disabled={isSpeakingHelp || isSpeakingSentence}
-                className={`group px-6 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 disabled:from-amber-300 disabled:to-orange-400 text-white font-kids text-lg font-bold rounded-2xl shadow-md hover:shadow-lg border-2 border-white transition-all transform hover:scale-105 active:scale-95 duration-200 flex items-center gap-2 cursor-pointer ${
+                className={`group px-6 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 disabled:from-amber-300 disabled:to-orange-400 text-white font-kids text-lg font-bold rounded-2xl shadow-md hover:shadow-lg border-2 theme-border transition-all transform hover:scale-105 active:scale-95 duration-200 flex items-center gap-2 cursor-pointer ${
                   isSpeakingHelp ? 'animate-pulse' : ''
                 }`}
               >
@@ -468,7 +475,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
               <button
                 onClick={playSentenceReadToMe}
                 disabled={isSpeakingSentence || isSpeakingHelp}
-                className={`group px-6 py-3 bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 disabled:from-violet-300 disabled:to-purple-400 text-white font-kids text-lg font-bold rounded-2xl shadow-md hover:shadow-lg border-2 border-white transition-all transform hover:scale-105 active:scale-95 duration-200 flex items-center gap-2 cursor-pointer ${
+                className={`group px-6 py-3 bg-gradient-to-r from-violet-400 to-purple-500 hover:from-violet-500 hover:to-purple-600 disabled:from-violet-300 disabled:to-purple-400 text-white font-kids text-lg font-bold rounded-2xl shadow-md hover:shadow-lg border-2 theme-border transition-all transform hover:scale-105 active:scale-95 duration-200 flex items-center gap-2 cursor-pointer ${
                   isSpeakingSentence ? 'animate-pulse' : ''
                 }`}
               >
@@ -484,7 +491,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
       <div className="flex flex-col items-center gap-4 w-full max-w-xl mx-auto">
         {/* Error Warnings */}
         {(error || micError) && (
-          <div className="bg-red-50 text-red-700 px-6 py-3 rounded-2xl border border-red-200 text-sm flex items-center gap-2 shadow-sm mb-2 font-sans">
+          <div className="bg-red-500/10 text-red-400 px-6 py-3 rounded-2xl border border-red-500/20 text-sm flex items-center gap-2 shadow-sm mb-2 font-sans">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span>{error || micError}</span>
           </div>
@@ -494,7 +501,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
           <div className="flex flex-col items-center gap-3 w-full animate-bounce-subtle">
             <button
               onClick={handleNextSentence}
-              className="px-10 py-5 text-2xl font-bold font-kids text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl shadow-xl shadow-emerald-100 hover:shadow-2xl border-4 border-white transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center gap-2"
+              className="px-10 py-5 text-2xl font-bold font-kids text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl shadow-xl shadow-emerald-100 hover:shadow-2xl border-4 theme-border transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer"
             >
               <span>{currentSentenceIndex < story.sentences.length - 1 ? 'Next Sentence' : 'Finish Story!'}</span>
               <ArrowRight className="w-7 h-7" />
@@ -513,18 +520,18 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
 
             {/* Helper links for classroom environments / troubleshooting */}
             {status === 'ready' && (
-              <div className="flex gap-4 text-xs font-sans font-semibold text-slate-500 mt-2">
+              <div className="flex gap-4 text-xs font-sans font-semibold theme-text-muted mt-2">
                 <button
                   onClick={handleRetrySentence}
-                  className="hover:text-teal-600 flex items-center gap-1 transition-colors"
+                  className="hover:text-teal-500 flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Reset Sentence
                 </button>
-                <span className="text-slate-300">|</span>
+                <span className="theme-text-muted opacity-40">|</span>
                 <button
                   onClick={handleSkipSentence}
-                  className="hover:text-cyan-600 transition-colors"
+                  className="hover:text-cyan-500 transition-colors cursor-pointer"
                 >
                   Skip Sentence ➡️
                 </button>
