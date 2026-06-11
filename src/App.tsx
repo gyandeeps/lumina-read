@@ -7,12 +7,10 @@ import {
   CheckCircle,
   BookOpenCheck,
   Filter,
-  Sun,
-  Moon,
-  Sunset,
 } from "lucide-react";
 import type { Story } from "./content/stories";
 import { ReadingScreen } from "./components/ReadingScreen";
+import { ThemeSwitcher } from "./components/ThemeSwitcher";
 import { triggerFlowerRain } from "./utils/confettiHelper";
 import { loadProgress, clearCurrentStory } from "./utils/progressStore";
 
@@ -135,41 +133,7 @@ function App() {
         />
 
         {/* Floating Theme Switcher */}
-        <div className="fixed bottom-6 right-6 z-50 flex bg-white/30 dark:bg-slate-900/30 backdrop-blur-md rounded-full p-1.5 border theme-border shadow-2xl gap-1 hover:scale-105 active:scale-95 transition-all duration-300">
-          <button
-            onClick={() => setTheme("day")}
-            className={`p-2 rounded-full transition-all duration-200 flex items-center justify-center cursor-pointer ${
-              theme === "day"
-                ? "bg-sky-500 text-white shadow-md shadow-sky-200"
-                : "theme-text-muted hover:bg-white/40 hover:theme-text-primary"
-            }`}
-            title="Day Mode"
-          >
-            <Sun className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setTheme("sunset")}
-            className={`p-2 rounded-full transition-all duration-200 flex items-center justify-center cursor-pointer ${
-              theme === "sunset"
-                ? "bg-amber-500 text-white shadow-md shadow-amber-200"
-                : "theme-text-muted hover:bg-white/40 hover:theme-text-primary"
-            }`}
-            title="Sunset Mode"
-          >
-            <Sunset className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setTheme("night")}
-            className={`p-2 rounded-full transition-all duration-200 flex items-center justify-center cursor-pointer ${
-              theme === "night"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-                : "theme-text-muted hover:bg-white/10 hover:theme-text-primary"
-            }`}
-            title="Cosmic Night Mode"
-          >
-            <Moon className="w-5 h-5" />
-          </button>
-        </div>
+        <ThemeSwitcher theme={theme} setTheme={setTheme} />
       </main>
     );
   }
@@ -488,41 +452,7 @@ function App() {
       </div>
 
       {/* Floating Theme Switcher */}
-      <div className="fixed bottom-6 right-6 z-50 flex bg-white/30 dark:bg-slate-900/30 backdrop-blur-md rounded-full p-1.5 border theme-border shadow-2xl gap-1 hover:scale-105 active:scale-95 transition-all duration-300">
-        <button
-          onClick={() => setTheme("day")}
-          className={`p-2 rounded-full transition-all duration-200 flex items-center justify-center cursor-pointer ${
-            theme === "day"
-              ? "bg-sky-500 text-white shadow-md shadow-sky-200"
-              : "theme-text-muted hover:bg-white/40 hover:theme-text-primary"
-          }`}
-          title="Day Mode"
-        >
-          <Sun className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => setTheme("sunset")}
-          className={`p-2 rounded-full transition-all duration-200 flex items-center justify-center cursor-pointer ${
-            theme === "sunset"
-              ? "bg-amber-500 text-white shadow-md shadow-amber-200"
-              : "theme-text-muted hover:bg-white/40 hover:theme-text-primary"
-          }`}
-          title="Sunset Mode"
-        >
-          <Sunset className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => setTheme("night")}
-          className={`p-2 rounded-full transition-all duration-200 flex items-center justify-center cursor-pointer ${
-            theme === "night"
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-              : "theme-text-muted hover:bg-white/10 hover:theme-text-primary"
-          }`}
-          title="Cosmic Night Mode"
-        >
-          <Moon className="w-5 h-5" />
-        </button>
-      </div>
+      <ThemeSwitcher theme={theme} setTheme={setTheme} />
     </div>
   );
 }
