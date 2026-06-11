@@ -9,7 +9,7 @@ import { StarsDisplay } from './StarsDisplay';
 import { StartButton } from './StartButton';
 import successChimeUrl from '../assets/success-chime.mp3';
 import { triggerFlowerRain, triggerSideBurst, triggerSuccessExplosion } from '../utils/confettiHelper';
-import { saveCurrentPosition, markStoryComplete } from '../utils/progressStore';
+import { saveCurrentPosition, markStoryComplete, incrementHelpWordsCount, incrementReadToMeCount } from '../utils/progressStore';
 
 interface ReadingScreenProps {
   story: Story;
@@ -65,6 +65,18 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
     return () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
+  }, []);
+
+  // Pre-warm Speech Synthesis voices for iOS Safari snappiness
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          window.speechSynthesis.getVoices();
+        };
+      }
+    }
   }, []);
 
   // Start idle timer when listening begins
@@ -125,6 +137,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
     const cleanWord = wordToPronounce.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
     if (!cleanWord) return;
 
+    incrementHelpWordsCount();
+
     if ('speechSynthesis' in window) {
       setIsSpeakingHelp(true);
 
@@ -166,6 +180,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
   // --- "Read to Me" Full Sentence Playback ---
   const playSentenceReadToMe = () => {
     if (isSpeakingSentence || isSpeakingHelp) return;
+
+    incrementReadToMeCount();
 
     if ('speechSynthesis' in window) {
       setIsSpeakingSentence(true);

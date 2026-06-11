@@ -7,12 +7,18 @@ export interface ReadingProgress {
   currentStory: { title: string; sentenceIndex: number } | null;
   /** Lifetime total words the child has successfully read */
   totalWordsRead: number;
+  /** Lifetime total times "Hear Word" was used */
+  helpWordsCount: number;
+  /** Lifetime total times "Read to Me" was used */
+  readToMeCount: number;
 }
 
 const DEFAULT_PROGRESS: ReadingProgress = {
   completedStories: [],
   currentStory: null,
   totalWordsRead: 0,
+  helpWordsCount: 0,
+  readToMeCount: 0,
 };
 
 /**
@@ -28,6 +34,8 @@ export function loadProgress(): ReadingProgress {
       completedStories: Array.isArray(parsed.completedStories) ? parsed.completedStories : [],
       currentStory: parsed.currentStory ?? null,
       totalWordsRead: typeof parsed.totalWordsRead === 'number' ? parsed.totalWordsRead : 0,
+      helpWordsCount: typeof parsed.helpWordsCount === 'number' ? parsed.helpWordsCount : 0,
+      readToMeCount: typeof parsed.readToMeCount === 'number' ? parsed.readToMeCount : 0,
     };
   } catch {
     return { ...DEFAULT_PROGRESS };
@@ -74,5 +82,23 @@ export function markStoryComplete(title: string, wordCount: number): void {
 export function clearCurrentStory(): void {
   const progress = loadProgress();
   progress.currentStory = null;
+  saveProgress(progress);
+}
+
+/**
+ * Increments the lifetime count for "Hear Word" help clicks.
+ */
+export function incrementHelpWordsCount(): void {
+  const progress = loadProgress();
+  progress.helpWordsCount = (progress.helpWordsCount || 0) + 1;
+  saveProgress(progress);
+}
+
+/**
+ * Increments the lifetime count for "Read to Me" help clicks.
+ */
+export function incrementReadToMeCount(): void {
+  const progress = loadProgress();
+  progress.readToMeCount = (progress.readToMeCount || 0) + 1;
   saveProgress(progress);
 }

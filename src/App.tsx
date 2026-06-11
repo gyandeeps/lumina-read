@@ -21,6 +21,8 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [completedStories, setCompletedStories] = useState<string[]>([]);
   const [totalWordsRead, setTotalWordsRead] = useState(0);
+  const [helpWordsCount, setHelpWordsCount] = useState(0);
+  const [readToMeCount, setReadToMeCount] = useState(0);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all');
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [resumeStory, setResumeStory] = useState<{ title: string; sentenceIndex: number } | null>(null);
@@ -30,6 +32,8 @@ function App() {
     const progress = loadProgress();
     setCompletedStories(progress.completedStories);
     setTotalWordsRead(progress.totalWordsRead);
+    setHelpWordsCount(progress.helpWordsCount ?? 0);
+    setReadToMeCount(progress.readToMeCount ?? 0);
 
     if (progress.currentStory) {
       setResumeStory(progress.currentStory);
@@ -65,6 +69,8 @@ function App() {
     const progress = loadProgress();
     setCompletedStories(progress.completedStories);
     setTotalWordsRead(progress.totalWordsRead);
+    setHelpWordsCount(progress.helpWordsCount ?? 0);
+    setReadToMeCount(progress.readToMeCount ?? 0);
   };
 
   const handleResumeStory = () => {
@@ -134,38 +140,100 @@ function App() {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col justify-between w-full page-enter">
+      <div className="flex-1 flex flex-col justify-between w-full">
         {/* Header section */}
-        <header className="relative max-w-4xl mx-auto w-full text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <img
-              src={`${import.meta.env.BASE_URL}pwa-512x512.png`}
-              alt="LuminaRead Owl Mascot"
-              onClick={triggerFlowerRain}
-              className="w-36 h-36 object-contain rounded-3xl shadow-xl border-4 border-white transform hover:rotate-6 hover:scale-110 transition-all duration-300 pointer-events-auto cursor-pointer"
-              title="Click me for flowers!"
-            />
+        <header className="relative max-w-4xl mx-auto w-full flex flex-col md:flex-row items-center md:items-start justify-between gap-8 mb-10 px-4">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left flex-1">
+            <div className="flex-shrink-0 animate-mascot-entrance">
+              <img
+                src={`${import.meta.env.BASE_URL}pwa-512x512.png`}
+                alt="LuminaRead Owl Mascot"
+                onClick={triggerFlowerRain}
+                className="w-24 h-24 sm:w-28 sm:h-28 object-contain rounded-3xl shadow-xl border-4 border-white transform hover:rotate-6 hover:scale-110 transition-all duration-300 pointer-events-auto cursor-pointer"
+                title="Click me for flowers!"
+              />
+            </div>
+            <div className="flex-1 flex flex-col items-center sm:items-start">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/60 border border-white/50 backdrop-blur-md rounded-full shadow-sm text-pink-500 font-sans font-bold text-xs mb-3 animate-bounce-subtle animate-fade-in-up-stagger" style={{ animationDelay: '100ms' }}>
+                <Sparkles className="w-3.5 h-3.5 fill-current" />
+                <span>100% On-Device Child-Safe AI</span>
+              </div>
+              <h1 className="font-kids text-4xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 tracking-tight leading-tight select-none animate-fade-in-up-stagger" style={{ animationDelay: '200ms' }}>
+                LuminaRead
+              </h1>
+              <p className="font-kids text-lg sm:text-xl text-slate-600 mt-2 max-w-lg leading-relaxed select-none animate-fade-in-up-stagger" style={{ animationDelay: '300ms' }}>
+                Read stories out loud! Your iPad will listen and highlight words as you say them correctly! 🎙️✨
+              </p>
+            </div>
           </div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 border border-white/50 backdrop-blur-md rounded-full shadow-sm text-pink-500 font-sans font-bold text-sm mb-4 animate-bounce-subtle">
-            <Sparkles className="w-4 h-4 fill-current" />
-            <span>100% On-Device Child-Safe AI</span>
+
+          {/* Star Reader Progress Card */}
+          <div className="w-full md:w-auto animate-fade-in-up-stagger" style={{ animationDelay: '380ms' }}>
+            <div className="glass-card p-6 rounded-3xl border border-white/80 shadow-md hover:shadow-lg hover:shadow-pink-100/50 transition-all duration-300 min-w-[240px] flex flex-col gap-3">
+              <h3 className="font-kids text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100/80 pb-2">
+                <span>Star Reader Stats</span>
+                <span className="animate-pulse">🏆</span>
+              </h3>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-sm font-sans">
+                  <span className="text-slate-500 font-medium flex items-center gap-2 text-xs">
+                    <Sparkles className="w-4 h-4 text-amber-500 fill-current" />
+                    Words Read:
+                  </span>
+                  <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100 text-xs">
+                    {totalWordsRead}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm font-sans">
+                  <span className="text-slate-500 font-medium flex items-center gap-2 text-xs">
+                    <BookOpenCheck className="w-4 h-4 text-pink-500" />
+                    Stories Completed:
+                  </span>
+                  <span className="font-extrabold text-pink-600 bg-pink-50 px-2.5 py-0.5 rounded-full border border-pink-100 text-xs">
+                    {completedStories.length} / {stories.length || 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm font-sans">
+                  <span className="text-slate-500 font-medium flex items-center gap-2 text-xs">
+                    <Volume2 className="w-4 h-4 text-sky-500" />
+                    "Hear Word" Help:
+                  </span>
+                  <span className="font-extrabold text-sky-600 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-100 text-xs">
+                    {helpWordsCount}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm font-sans">
+                  <span className="text-slate-500 font-medium flex items-center gap-2 text-xs">
+                    <BookOpen className="w-4 h-4 text-purple-500" />
+                    "Read to Me":
+                  </span>
+                  <span className="font-extrabold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100 text-xs">
+                    {readToMeCount}
+                  </span>
+                </div>
+              </div>
+
+              {totalWordsRead === 0 ? (
+                <div className="mt-1 text-[11px] text-slate-400 font-sans italic leading-normal text-center bg-slate-50/50 p-2 rounded-xl border border-dashed border-slate-200">
+                  Pick a story below to start your adventure! ✨
+                </div>
+              ) : (
+                <div className="mt-1 text-[11px] text-emerald-600 font-sans font-bold leading-normal text-center bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/40">
+                  Awesome job reading! Keep it up! 🌟
+                </div>
+              )}
+            </div>
           </div>
-          <h1 className="font-kids text-5xl md:text-6xl lg:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 tracking-tight leading-tight select-none">
-            LuminaRead
-          </h1>
-          <p className="font-kids text-xl md:text-2xl text-slate-600 mt-4 max-w-xl mx-auto leading-relaxed select-none">
-            Read stories out loud! Your iPad will listen and highlight words as you say them correctly! 🎙️✨
-          </p>
         </header>
 
         {/* Story Select Cards */}
         <main className="relative flex-1 max-w-4xl mx-auto w-full mb-12">
-          <h2 className="font-kids text-3xl font-bold text-slate-800 mb-4 text-center select-none">
+          <h2 className="font-kids text-3xl font-bold text-slate-800 mb-4 text-center select-none animate-fade-in-up-stagger" style={{ animationDelay: '400ms' }}>
             Pick a Story to Read:
           </h2>
 
           {/* Difficulty Filter Row */}
-          <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+          <div className="flex items-center justify-center gap-2 mb-6 flex-wrap animate-fade-in-up-stagger" style={{ animationDelay: '480ms' }}>
             <Filter className="w-4 h-4 text-slate-400" />
             {(['all', 'easy', 'medium', 'hard'] as DifficultyFilter[]).map((level) => (
               <button
@@ -189,17 +257,17 @@ function App() {
           </div>
 
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center p-12">
+            <div className="flex flex-col items-center justify-center p-12 animate-fade-in-up-stagger" style={{ animationDelay: '560ms' }}>
               <Loader2 className="w-12 h-12 text-pink-500 animate-spin mb-4" />
               <p className="font-kids text-lg font-bold text-slate-600">Opening library book list...</p>
             </div>
           ) : error ? (
-            <div className="text-center p-8 bg-red-50 border border-red-200 rounded-3xl max-w-md mx-auto">
+            <div className="text-center p-8 bg-red-50 border border-red-200 rounded-3xl max-w-md mx-auto animate-fade-in-up-stagger" style={{ animationDelay: '560ms' }}>
               <p className="font-kids text-lg font-bold text-red-600">{error}</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-8 px-4">
-              {filteredStories.map((story) => {
+              {filteredStories.map((story, index) => {
                 const totalWords = story.sentences.reduce((acc, curr) => acc + curr.split(/\s+/).length, 0);
                 const isCompleted = completedStories.includes(story.title);
                 const diffConfig = DIFFICULTY_CONFIG[story.difficulty];
@@ -208,9 +276,10 @@ function App() {
                   <div
                     key={story.title}
                     onClick={() => handleSelectStory(story)}
-                    className={`group glass-card p-8 rounded-3xl cursor-pointer hover:shadow-xl hover:shadow-pink-100 transition-all duration-300 transform hover:-translate-y-2 border-2 flex flex-col justify-between min-h-[240px] ${
+                    className={`group glass-card p-8 rounded-3xl cursor-pointer hover:shadow-xl hover:shadow-pink-100 transition-all duration-300 transform hover:-translate-y-2 border-2 flex flex-col justify-between min-h-[240px] animate-fade-in-up-stagger ${
                       isCompleted ? 'border-emerald-200 bg-emerald-50/30' : 'border-white/80'
                     }`}
+                    style={{ animationDelay: `${560 + index * 60}ms` }}
                   >
                     <div>
                       <div className="flex justify-between items-start mb-4">
@@ -262,14 +331,7 @@ function App() {
         </main>
 
         {/* Footer / Tip */}
-        <footer className="relative text-center text-xs text-slate-400 font-sans mt-auto space-y-3">
-          {/* Total Words Read Counter */}
-          {totalWordsRead > 0 && (
-            <div className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/60 rounded-full shadow-sm text-emerald-600 font-bold text-sm mb-2">
-              <BookOpenCheck className="w-4 h-4" />
-              <span>{totalWordsRead} words read so far! 🎉</span>
-            </div>
-          )}
+        <footer className="relative text-center text-xs text-slate-400 font-sans mt-auto space-y-3 animate-fade-in-up-stagger" style={{ animationDelay: '800ms' }}>
           <div className="max-w-md mx-auto bg-white/40 border border-white/30 p-4 rounded-2xl flex items-center justify-center gap-3">
             <Volume2 className="w-5 h-5 text-pink-400 flex-shrink-0 animate-pulse" />
             <span className="leading-normal">
