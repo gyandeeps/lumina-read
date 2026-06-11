@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-kids: "Comic Neue", "Comic Sans MS", cursive, sans-serif;
+  --font-sans: "Poppins", "Inter", sans-serif;
+  --animate-pulse-subtle: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-bounce-subtle: bounce-subtle 1.5s ease-in-out infinite;
+
+  @keyframes pulse-subtle {
+    0%, 100% { transform: scale(1.1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.85; }
+  }
+  @keyframes bounce-subtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-pink-50 text-slate-800 font-sans antialiased overflow-x-hidden min-h-screen selection:bg-pink-200;
+  }
+}
+
+/* Custom glassmorphism classes */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(244, 63, 94, 0.08);
+}
