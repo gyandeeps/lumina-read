@@ -35,7 +35,7 @@ function App() {
   const [resumeSentenceIndex, setResumeSentenceIndex] = useState(0);
   const [theme, setTheme] = useState<"day" | "sunset" | "night">(() => {
     const saved = localStorage.getItem("lumina-theme");
-    return (saved as "day" | "sunset" | "night") || "day";
+    return (saved as "day" | "sunset" | "night") || "sunset";
   });
 
   // Save theme to localStorage
