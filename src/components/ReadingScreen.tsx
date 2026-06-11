@@ -516,6 +516,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               onInit={initModel}
               onStart={startListening}
               onStop={stopListening}
+              theme={theme}
             />
 
             {/* Helper links for classroom environments / troubleshooting */}
