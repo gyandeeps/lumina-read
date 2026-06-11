@@ -48,6 +48,7 @@ function copyOrtAssetsPlugin() {
 }
 
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS ? '/lumina-read/' : '/',
   plugins: [
     react(),
     copyOrtAssetsPlugin(),

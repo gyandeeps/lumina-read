@@ -77,6 +77,7 @@ export function useSpeechRecognition() {
     setFileProgress({});
 
     try {
+      const wasmPaths = new URL(`${import.meta.env.BASE_URL}wasm/`, window.location.href).href;
       const worker = new Worker(
         new URL('../workers/whisper.worker.ts', import.meta.url),
         { type: 'module' }
@@ -112,7 +113,7 @@ export function useSpeechRecognition() {
         }
       };
 
-      worker.postMessage({ type: 'init' });
+      worker.postMessage({ type: 'init', wasmPaths });
     } catch (err: any) {
       console.error('Failed to initialize Whisper worker:', err);
       setStatus('error');

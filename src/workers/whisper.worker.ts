@@ -42,9 +42,12 @@ async function getTranscriber(progressCallback: (data: any) => void) {
 
 // Listen for messages from the main thread
 self.addEventListener('message', async (event: MessageEvent) => {
-  const { type, audio } = event.data;
+  const { type, audio, wasmPaths } = event.data;
 
   if (type === 'init') {
+    if (wasmPaths && env.backends.onnx.wasm) {
+      env.backends.onnx.wasm.wasmPaths = wasmPaths;
+    }
     try {
       await getTranscriber((data) => {
         // Send loading progress back to UI

@@ -10,7 +10,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/stories.json')
+    fetch(`${import.meta.env.BASE_URL}stories.json`)
       .then((res) => {
         if (!res.ok) throw new Error('Could not fetch stories definition.');
         return res.json();
@@ -45,7 +45,7 @@ function App() {
       <header className="relative max-w-4xl mx-auto w-full text-center mb-12">
         <div className="flex justify-center mb-6">
           <img
-            src="/pwa-512x512.png"
+            src={`${import.meta.env.BASE_URL}pwa-512x512.png`}
             alt="LuminaRead Owl Mascot"
             className="w-36 h-36 object-contain rounded-3xl shadow-xl border-4 border-white transform hover:rotate-6 hover:scale-110 transition-all duration-300 pointer-events-auto"
           />
