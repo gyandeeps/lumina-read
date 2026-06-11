@@ -309,10 +309,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
   if (isStoryCompleted) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80svh] px-4 page-enter">
-        <div className="glass-card max-w-lg w-full p-10 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+        <div className="glass-card max-w-lg w-full p-10 rounded-3xl text-center shadow-2xl relative overflow-hidden border-teal-100 shadow-teal-100/10">
           {/* Confetti decoration */}
           <div className="absolute -top-12 -left-12 w-24 h-24 bg-yellow-300/20 rounded-full blur-xl animate-pulse" />
-          <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-300/20 rounded-full blur-xl animate-pulse" />
+          <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-teal-300/20 rounded-full blur-xl animate-pulse" />
           
           <div className="inline-flex p-5 bg-gradient-to-tr from-yellow-400 to-amber-300 rounded-full border-4 border-white shadow-lg mb-6">
             <Trophy className="w-16 h-16 text-yellow-900 animate-bounce-subtle" />
@@ -322,7 +322,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
             You Did It!
           </h2>
           <p className="text-xl text-slate-500 font-sans mb-4">
-            You read <span className="font-bold text-pink-500">"{story.title}"</span> all by yourself!
+            You read <span className="font-bold text-teal-600">"{story.title}"</span> all by yourself!
           </p>
 
           {/* Stars celebration */}
@@ -330,9 +330,9 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
             <StarsDisplay earned={story.sentences.length} total={story.sentences.length} />
           </div>
 
-          <div className="bg-gradient-to-r from-pink-50/50 to-blue-50/50 p-6 rounded-2xl border border-white/60 shadow-inner mb-8 flex justify-around">
+          <div className="bg-gradient-to-r from-teal-50/40 via-sky-50/40 to-amber-50/40 p-6 rounded-2xl border border-white/60 shadow-inner mb-8 flex justify-around">
             <div className="text-center">
-              <span className="block text-3xl font-extrabold text-pink-500 font-sans">
+              <span className="block text-3xl font-extrabold text-teal-600 font-sans">
                 {story.sentences.length}
               </span>
               <span className="text-xs uppercase text-slate-500 font-bold tracking-wider font-sans">
@@ -361,10 +361,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
 
           <button
             onClick={onBack}
-            className="w-full py-4 text-xl font-bold font-kids text-white bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl shadow-lg shadow-pink-200 transition-all duration-300 transform hover:scale-105 active:scale-95 border-2 border-white flex items-center justify-center gap-2"
+            className="w-full py-4 text-xl font-bold font-kids text-white bg-gradient-to-r from-teal-600 to-cyan-500 rounded-2xl shadow-lg shadow-teal-100/30 hover:shadow-teal-100/50 transition-all duration-300 transform hover:scale-105 active:scale-95 border-2 border-white flex items-center justify-center gap-2"
           >
             <span>Read Another Story!</span>
-            <Sparkles className="w-6 h-6" />
+            <Sparkles className="w-6 h-6 text-amber-300" />
           </button>
         </div>
       </div>
@@ -394,7 +394,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
           <div className="flex items-center justify-center gap-3 mt-1">
             <div className="w-32 bg-slate-200 rounded-full h-2 overflow-hidden border border-slate-300/30">
               <div
-                className="bg-pink-500 h-full rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-teal-500 to-cyan-500 h-full rounded-full transition-all duration-500"
                 style={{ width: `${overallProgressPercent}%` }}
               />
             </div>
@@ -413,10 +413,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
 
         <button
           onClick={triggerFlowerRain}
-          className="p-3 bg-white/80 rounded-2xl border border-slate-200/50 hover:bg-pink-50 hover:text-pink-500 hover:border-pink-200 transition-all flex items-center justify-center text-slate-500 shadow-sm hover:shadow active:scale-95 duration-200"
+          className="p-3 bg-white/80 rounded-2xl border border-slate-200/50 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition-all flex items-center justify-center text-slate-500 shadow-sm hover:shadow active:scale-95 duration-200"
           title="Sprinkle flowers!"
         >
-          <Flower className="w-6 h-6 text-pink-500 animate-pulse" />
+          <Flower className="w-6 h-6 text-teal-600 animate-pulse" />
         </button>
       </div>
 
@@ -516,7 +516,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
               <div className="flex gap-4 text-xs font-sans font-semibold text-slate-500 mt-2">
                 <button
                   onClick={handleRetrySentence}
-                  className="hover:text-pink-500 flex items-center gap-1 transition-colors"
+                  className="hover:text-teal-600 flex items-center gap-1 transition-colors"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Reset Sentence
@@ -524,7 +524,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({ story, onBack, ini
                 <span className="text-slate-300">|</span>
                 <button
                   onClick={handleSkipSentence}
-                  className="hover:text-blue-500 transition-colors"
+                  className="hover:text-cyan-600 transition-colors"
                 >
                   Skip Sentence ➡️
                 </button>

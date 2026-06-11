@@ -53,8 +53,8 @@ export const WordHighlighter: React.FC<WordHighlighterProps> = ({
                   ? isSpeakingHelp
                     ? 'text-amber-500 font-extrabold scale-110 animate-bounce-subtle px-3 py-1 bg-amber-50 rounded-2xl border-2 border-amber-300 shadow-sm shadow-amber-100/50'
                     : isListening
-                      ? 'text-blue-500 font-extrabold scale-110 animate-pulse-subtle px-3 py-1 bg-blue-50 rounded-2xl border-2 border-blue-200/50 shadow-sm shadow-blue-100/50'
-                      : 'text-blue-500 font-bold scale-105 px-3 py-1 bg-blue-50/50 rounded-2xl border border-blue-100'
+                      ? 'text-teal-600 font-extrabold scale-110 animate-pulse-subtle px-3 py-1 bg-teal-50 rounded-2xl border-2 border-teal-200/50 shadow-sm shadow-teal-100/50'
+                      : 'text-teal-600 font-bold scale-105 px-3 py-1 bg-teal-50/50 rounded-2xl border border-teal-100'
                   : ''
               }
               ${

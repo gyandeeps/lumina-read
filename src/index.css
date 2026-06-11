@@ -74,7 +74,7 @@
 
 @layer base {
   body {
-    @apply bg-pink-50 text-slate-800 font-sans antialiased overflow-x-hidden min-h-screen selection:bg-pink-200;
+    @apply bg-slate-50 text-slate-800 font-sans antialiased overflow-x-hidden min-h-screen selection:bg-teal-100;
   }
 }
 
@@ -91,7 +91,7 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px 0 rgba(244, 63, 94, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(20, 184, 166, 0.06);
 }
 
 /* Star pop-in animation (used by StarsDisplay) */
