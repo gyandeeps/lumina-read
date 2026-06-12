@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { ChevronLeft, ArrowRight, Star, RefreshCw, Trophy, Sparkles, AlertCircle, Flower, Volume2, BookOpen, Clock, MessageCircle } from 'lucide-react';
 import type { Story } from '../content/stories';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
-import { useReadingTimer } from '../hooks/useReadingTimer';
+import { useReadingTimer, useTimerDisplay } from '../hooks/useReadingTimer';
 import { updateReadingProgress, normalizeWord } from '../utils/fuzzyMatch';
 import { WordHighlighter } from './WordHighlighter';
 import { StarsDisplay } from './StarsDisplay';
@@ -20,6 +20,12 @@ interface ReadingScreenProps {
 
 /** Seconds of no word progress before showing encouragement */
 const IDLE_ENCOURAGEMENT_SECONDS = 15;
+
+/** Isolated component that subscribes to timer ticks. Only this re-renders every second. */
+const TimerText: React.FC<{ store: ReturnType<typeof useReadingTimer>['store'] }> = ({ store }) => {
+  const display = useTimerDisplay(store);
+  return <>{display}</>;
+};
 
 export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   story,
@@ -51,6 +57,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   const readingTimer = useReadingTimer();
   const { start: timerStart, pause: timerPause, reset: timerReset } = readingTimer;
 
+  // Track whether this component instance is still mounted.
+  // Guards async TTS callbacks from setting state on an unmounted component.
+  const isMountedRef = useRef(true);
+
   // Idle encouragement timer
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastProgressTimeRef = useRef(Date.now());
@@ -66,10 +76,16 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     }, IDLE_ENCOURAGEMENT_SECONDS * 1000);
   }, []);
 
-  // Clear idle timer on unmount
+  // Master unmount cleanup: idle timer, speech synthesis, mounted flag
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      // Cancel any in-flight TTS to release iPad audio hardware
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
 
@@ -77,11 +93,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   useEffect(() => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          window.speechSynthesis.getVoices();
-        };
-      }
+      const onVoicesChanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', onVoicesChanged);
+      return () => {
+        window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
+      };
     }
   }, []);
 
@@ -136,6 +154,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
   useEffect(() => {
     chimeAudioRef.current = new Audio(successChimeUrl);
+    return () => {
+      if (chimeAudioRef.current) {
+        chimeAudioRef.current.pause();
+        chimeAudioRef.current.src = '';
+        chimeAudioRef.current = null;
+      }
+    };
   }, []);
 
   const playSuccessChime = () => {
@@ -175,6 +200,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       utterance.lang = 'en-US';
 
       utterance.onend = () => {
+        if (!isMountedRef.current) return;
         setIsSpeakingHelp(false);
         if (wasListening) {
           startListening();
@@ -184,6 +210,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
       utterance.onerror = (e) => {
         console.error('Speech synthesis error:', e);
+        if (!isMountedRef.current) return;
         setIsSpeakingHelp(false);
         if (wasListening) {
           startListening();
@@ -219,6 +246,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       utterance.lang = 'en-US';
 
       utterance.onend = () => {
+        if (!isMountedRef.current) return;
         setIsSpeakingSentence(false);
         if (wasListening) {
           startListening();
@@ -228,6 +256,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
       utterance.onerror = (e) => {
         console.error('Sentence speech synthesis error:', e);
+        if (!isMountedRef.current) return;
         setIsSpeakingSentence(false);
         if (wasListening) {
           startListening();
@@ -371,7 +400,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             <div className="border-r theme-border" />
             <div className="text-center flex-1">
               <span className="block text-2xl sm:text-3xl font-extrabold text-emerald-500 font-sans">
-                {readingTimer.getFormattedTime()}
+                <TimerText store={readingTimer.store} />
               </span>
               <span className="text-[10px] sm:text-xs uppercase theme-text-secondary font-bold tracking-wider font-sans block leading-tight">
                 Reading Time
@@ -447,7 +476,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           {/* Timer on the right */}
           <div className="flex items-center gap-1.5 text-sm sm:text-base theme-text-muted font-sans font-bold shrink-0 justify-center sm:justify-end w-full sm:w-auto">
             <Clock className="w-3.5 h-3.5 text-teal-500" />
-            <span>{readingTimer.getFormattedTime()}</span>
+            <span><TimerText store={readingTimer.store} /></span>
           </div>
         </div>
       </div>

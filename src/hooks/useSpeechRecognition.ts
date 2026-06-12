@@ -49,6 +49,7 @@ export function useSpeechRecognition() {
   const rescheduleTimerRef = useRef<any>(null);
   const isListeningRef = useRef<boolean>(false);
   const sessionIdRef = useRef<number>(0);
+  const shouldAutoStartRef = useRef<boolean>(false);
 
   // Clean up worker and timers on unmount
   useEffect(() => {
@@ -111,6 +112,9 @@ export function useSpeechRecognition() {
   const initModel = useCallback(() => {
     if (workerRef.current) return;
 
+    shouldAutoStartRef.current = true;
+    recorder.preInitialize();
+
     setSpeechStatus('loading');
     setError(null);
     setFileProgress({});
@@ -168,7 +172,7 @@ export function useSpeechRecognition() {
       setSpeechStatus('error');
       setError(err.message || 'Failed to instantiate Web Worker.');
     }
-  }, [triggerProcessing, scheduleNextProcessing]);
+  }, [triggerProcessing, scheduleNextProcessing, recorder]);
 
   // Start capturing audio and running adaptive Whisper inference
   const startListening = useCallback(async () => {
@@ -214,6 +218,14 @@ export function useSpeechRecognition() {
     // Run a final time to parse the absolute end of speech
     triggerProcessing();
   }, [recorder, triggerProcessing]);
+
+  // Auto-start listening when the model completes loading
+  useEffect(() => {
+    if (status === 'ready' && shouldAutoStartRef.current) {
+      shouldAutoStartRef.current = false;
+      startListening();
+    }
+  }, [status, startListening]);
 
   // Reset transcript and audio buffers manually
   const resetTranscript = useCallback(() => {

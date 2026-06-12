@@ -42,6 +42,13 @@ export function downsampleBuffer(
 }
 
 /**
+ * Maximum buffer capacity in samples.
+ * 60 seconds at 16kHz = 960,000 samples (~3.6 MB).
+ * Prevents unbounded memory growth during long reading sessions.
+ */
+const MAX_CAPACITY = 16000 * 60;
+
+/**
  * A growable buffer for efficiently accumulating Float32 audio samples.
  * Pre-allocates capacity and only reallocates (doubling) when exceeded.
  * Supports extracting a trailing window of the last N samples for sliding-window inference.
@@ -49,9 +56,11 @@ export function downsampleBuffer(
 export class GrowableAudioBuffer {
   private buffer: Float32Array;
   private length: number;
+  private readonly initialCapacity: number;
 
   constructor(initialCapacity: number = 480_000) {
     // Default 30s at 16kHz
+    this.initialCapacity = initialCapacity;
     this.buffer = new Float32Array(initialCapacity);
     this.length = 0;
   }
@@ -60,14 +69,33 @@ export class GrowableAudioBuffer {
   append(chunk: Float32Array): void {
     const needed = this.length + chunk.length;
     if (needed > this.buffer.length) {
-      // Double capacity until it fits
+      // Double capacity until it fits, but respect the hard ceiling
       let newCapacity = this.buffer.length * 2;
       while (newCapacity < needed) {
         newCapacity *= 2;
       }
-      const newBuffer = new Float32Array(newCapacity);
-      newBuffer.set(this.buffer.subarray(0, this.length));
-      this.buffer = newBuffer;
+      newCapacity = Math.min(newCapacity, MAX_CAPACITY);
+
+      // If we've hit the ceiling and still need more room, discard the
+      // oldest samples so the newest audio always fits.
+      if (needed > newCapacity) {
+        const keep = newCapacity - chunk.length;
+        if (keep > 0) {
+          const newBuffer = new Float32Array(newCapacity);
+          // Copy the tail of existing data
+          newBuffer.set(this.buffer.subarray(this.length - keep, this.length));
+          this.buffer = newBuffer;
+          this.length = keep;
+        } else {
+          // Chunk alone exceeds capacity — just keep the chunk's tail
+          this.buffer = new Float32Array(newCapacity);
+          this.length = 0;
+        }
+      } else {
+        const newBuffer = new Float32Array(newCapacity);
+        newBuffer.set(this.buffer.subarray(0, this.length));
+        this.buffer = newBuffer;
+      }
     }
     this.buffer.set(chunk, this.length);
     this.length += chunk.length;
@@ -89,8 +117,15 @@ export class GrowableAudioBuffer {
     return this.length;
   }
 
-  /** Clear the buffer, resetting length to 0 without deallocating. */
+  /**
+   * Clear the buffer and release memory back to the initial allocation size.
+   * Previous implementation only reset the length counter, leaving potentially
+   * massive (doubled many times) Float32Arrays in memory indefinitely.
+   */
   clear(): void {
     this.length = 0;
+    if (this.buffer.length > this.initialCapacity) {
+      this.buffer = new Float32Array(this.initialCapacity);
+    }
   }
 }
