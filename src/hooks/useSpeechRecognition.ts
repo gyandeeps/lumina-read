@@ -76,8 +76,9 @@ export function useSpeechRecognition() {
     isProcessingRef.current = true;
     pendingProcessRef.current = false;
 
-    // Extract only the last WINDOW_SAMPLES (5s) of audio
-    const windowData = buffer.getLastNSamples(WINDOW_SAMPLES);
+    // Extract only the last WINDOW_SAMPLES (5s) of audio using the
+    // transfer-optimized method to avoid per-call 320KB allocations
+    const windowData = buffer.getLastNSamplesForTransfer(WINDOW_SAMPLES);
 
     // Transfer the buffer to the worker (zero-copy)
     workerRef.current?.postMessage(

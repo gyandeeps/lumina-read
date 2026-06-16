@@ -8,8 +8,24 @@ import { WordHighlighter } from './WordHighlighter';
 import { StarsDisplay } from './StarsDisplay';
 import { StartButton } from './StartButton';
 import successChimeUrl from '../assets/success-chime.mp3';
-import { triggerFlowerRain, triggerSideBurst, triggerSuccessExplosion } from '../utils/confettiHelper';
+import { triggerFlowerRain, triggerSideBurst, triggerSuccessExplosion, resetConfetti, cancelFlowerRain } from '../utils/confettiHelper';
 import { saveCurrentPosition, markStoryComplete, incrementHelpWordsCount, incrementReadToMeCount } from '../utils/progressStore';
+
+// ── Lazy Audio Singleton ────────────────────────────────────────────
+// On iOS Safari, each `new Audio()` is backed by an AVAudioPlayer
+// instance which is expensive. Re-creating it every mount leaks memory.
+let sharedChimeAudio: HTMLAudioElement | null = null;
+function getChimeAudio(): HTMLAudioElement {
+  if (!sharedChimeAudio) {
+    sharedChimeAudio = new Audio(successChimeUrl);
+  }
+  return sharedChimeAudio;
+}
+
+/** Maximum time (ms) to wait for TTS word help before force-cancelling. */
+const TTS_WORD_TIMEOUT_MS = 8000;
+/** Maximum time (ms) to wait for TTS full sentence before force-cancelling. */
+const TTS_SENTENCE_TIMEOUT_MS = 20000;
 
 interface ReadingScreenProps {
   story: Story;
@@ -61,6 +77,9 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   // Guards async TTS callbacks from setting state on an unmounted component.
   const isMountedRef = useRef(true);
 
+  // Safety timeout refs for iOS speech synthesis watchdog workaround
+  const ttsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Idle encouragement timer
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastProgressTimeRef = useRef(Date.now());
@@ -76,16 +95,20 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     }, IDLE_ENCOURAGEMENT_SECONDS * 1000);
   }, []);
 
-  // Master unmount cleanup: idle timer, speech synthesis, mounted flag
+  // Master unmount cleanup: idle timer, speech synthesis, confetti, mounted flag
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
       // Cancel any in-flight TTS to release iPad audio hardware
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
+      // Free confetti GPU resources
+      cancelFlowerRain();
+      resetConfetti();
     };
   }, []);
 
@@ -115,6 +138,28 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       setShowIdleEncouragement(false);
     }
   }, [status, isRecording, resetIdleTimer]);
+
+  // ── Visibility / Memory Pressure Handler ─────────────────────────
+  // iPadOS aggressively terminates backgrounded WebViews. Proactively
+  // release heavy resources when the page is hidden.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page backgrounded — release resources
+        stopListening();
+        timerPause();
+        resetConfetti();
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [stopListening, timerPause]);
 
   // Reset transcript and index when loading a new story
   useEffect(() => {
@@ -149,27 +194,12 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   const expectedWords = useMemo(() => sentence.split(/\s+/).filter(Boolean), [sentence]);
   const expectedTokens = useMemo(() => expectedWords.map(normalizeWord).filter(Boolean), [expectedWords]);
 
-  // Audio elements ref to avoid creating multiple Audio objects
-  const chimeAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    chimeAudioRef.current = new Audio(successChimeUrl);
-    return () => {
-      if (chimeAudioRef.current) {
-        chimeAudioRef.current.pause();
-        chimeAudioRef.current.src = '';
-        chimeAudioRef.current = null;
-      }
-    };
-  }, []);
-
   const playSuccessChime = () => {
-    if (chimeAudioRef.current) {
-      chimeAudioRef.current.currentTime = 0;
-      chimeAudioRef.current.play().catch((err) => {
-        console.warn('Audio play failed due to user permission restriction:', err);
-      });
-    }
+    const chime = getChimeAudio();
+    chime.currentTime = 0;
+    chime.play().catch((err) => {
+      console.warn('Audio play failed due to user permission restriction:', err);
+    });
   };
 
   // --- Help Pronunciation (single word) ---
@@ -194,31 +224,40 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       }
 
       window.speechSynthesis.cancel();
+      if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
+
+      /** Shared cleanup for both normal completion and watchdog timeout. */
+      const finishTTS = () => {
+        if (ttsTimeoutRef.current) {
+          clearTimeout(ttsTimeoutRef.current);
+          ttsTimeoutRef.current = null;
+        }
+        if (!isMountedRef.current) return;
+        setIsSpeakingHelp(false);
+        if (wasListening) {
+          startListening();
+          readingTimer.start();
+        }
+      };
 
       const utterance = new SpeechSynthesisUtterance(cleanWord);
       utterance.rate = 0.85;
       utterance.lang = 'en-US';
 
-      utterance.onend = () => {
-        if (!isMountedRef.current) return;
-        setIsSpeakingHelp(false);
-        if (wasListening) {
-          startListening();
-          readingTimer.start();
-        }
-      };
-
+      utterance.onend = finishTTS;
       utterance.onerror = (e) => {
         console.error('Speech synthesis error:', e);
-        if (!isMountedRef.current) return;
-        setIsSpeakingHelp(false);
-        if (wasListening) {
-          startListening();
-          readingTimer.start();
-        }
+        finishTTS();
       };
 
       window.speechSynthesis.speak(utterance);
+
+      // iOS watchdog: force-cancel if callbacks never fire (iOS kills TTS silently after ~15s)
+      ttsTimeoutRef.current = setTimeout(() => {
+        console.warn('TTS word help watchdog triggered — force-cancelling');
+        window.speechSynthesis.cancel();
+        finishTTS();
+      }, TTS_WORD_TIMEOUT_MS);
     } else {
       alert(`The word is: "${cleanWord}"`);
     }
@@ -240,31 +279,40 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       }
 
       window.speechSynthesis.cancel();
+      if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
+
+      /** Shared cleanup for both normal completion and watchdog timeout. */
+      const finishTTS = () => {
+        if (ttsTimeoutRef.current) {
+          clearTimeout(ttsTimeoutRef.current);
+          ttsTimeoutRef.current = null;
+        }
+        if (!isMountedRef.current) return;
+        setIsSpeakingSentence(false);
+        if (wasListening) {
+          startListening();
+          readingTimer.start();
+        }
+      };
 
       const utterance = new SpeechSynthesisUtterance(sentence);
       utterance.rate = 0.7;
       utterance.lang = 'en-US';
 
-      utterance.onend = () => {
-        if (!isMountedRef.current) return;
-        setIsSpeakingSentence(false);
-        if (wasListening) {
-          startListening();
-          readingTimer.start();
-        }
-      };
-
+      utterance.onend = finishTTS;
       utterance.onerror = (e) => {
         console.error('Sentence speech synthesis error:', e);
-        if (!isMountedRef.current) return;
-        setIsSpeakingSentence(false);
-        if (wasListening) {
-          startListening();
-          readingTimer.start();
-        }
+        finishTTS();
       };
 
       window.speechSynthesis.speak(utterance);
+
+      // iOS watchdog: force-cancel if callbacks never fire
+      ttsTimeoutRef.current = setTimeout(() => {
+        console.warn('TTS sentence help watchdog triggered — force-cancelling');
+        window.speechSynthesis.cancel();
+        finishTTS();
+      }, TTS_SENTENCE_TIMEOUT_MS);
     } else {
       alert(`The sentence is: "${sentence}"`);
     }

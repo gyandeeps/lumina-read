@@ -11,6 +11,8 @@ export function useAudioRecorder(onAudioData: (audio: Float32Array) => void) {
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const onAudioDataRef = useRef(onAudioData);
   const workletReadyRef = useRef(false);
+  /** Tracks whether we're using AudioWorklet (true) or ScriptProcessor (false). */
+  const usingWorkletRef = useRef(false);
   onAudioDataRef.current = onAudioData;
 
   // Clean up AudioContext on unmount — this is the ONLY place we close() it
@@ -80,6 +82,7 @@ export function useAudioRecorder(onAudioData: (audio: Float32Array) => void) {
       source.connect(workletNode);
       workletNode.connect(ctx.destination);
 
+      usingWorkletRef.current = true;
       console.log('Audio: Using AudioWorkletNode (off-main-thread downsampling)');
       return true;
     } catch (err) {
@@ -114,8 +117,50 @@ export function useAudioRecorder(onAudioData: (audio: Float32Array) => void) {
     source.connect(processor);
     processor.connect(ctx.destination);
 
+    usingWorkletRef.current = false;
     console.log('Audio: Using ScriptProcessorNode (main-thread fallback)');
   }, []);
+
+  /**
+   * Disconnect processing nodes (worklet/script processor + source) but keep
+   * the MediaStream and AudioContext alive so they can be reconnected cheaply.
+   */
+  const disconnectProcessingNodes = useCallback(() => {
+    if (workletNodeRef.current) {
+      workletNodeRef.current.disconnect();
+      workletNodeRef.current = null;
+    }
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+    if (sourceRef.current) {
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Reconnect processing nodes to an existing (already-acquired) MediaStream.
+   * Creates a new source node and hooks up the worklet or script processor.
+   */
+  const reconnectProcessingNodes = useCallback(async (
+    ctx: AudioContext,
+    stream: MediaStream
+  ): Promise<void> => {
+    const source = ctx.createMediaStreamSource(stream);
+    sourceRef.current = source;
+
+    // Re-use whichever processing path was established on first connect
+    if (usingWorkletRef.current) {
+      const ok = await tryAudioWorklet(ctx, source);
+      if (!ok) {
+        setupScriptProcessor(ctx, source);
+      }
+    } else {
+      setupScriptProcessor(ctx, source);
+    }
+  }, [tryAudioWorklet, setupScriptProcessor]);
 
   const startRecording = useCallback(async () => {
     setError(null);
@@ -146,24 +191,39 @@ export function useAudioRecorder(onAudioData: (audio: Float32Array) => void) {
         workletReadyRef.current = false;
       }
 
-      // Request microphone access with filters for speech
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
-      streamRef.current = stream;
+      // ── Reuse existing MediaStream if available ──
+      const existingStream = streamRef.current;
+      const existingTrack = existingStream?.getAudioTracks()[0];
+      const streamStillAlive = existingTrack && existingTrack.readyState === 'live';
 
-      // Connect microphone to source node
-      const source = ctx.createMediaStreamSource(stream);
-      sourceRef.current = source;
+      if (streamStillAlive && existingStream) {
+        // Re-enable the muted track and reconnect processing nodes
+        existingTrack.enabled = true;
+        await reconnectProcessingNodes(ctx, existingStream);
+      } else {
+        // First time or stream was released — acquire a new one
+        if (existingStream) {
+          existingStream.getTracks().forEach((t) => t.stop());
+        }
 
-      // Try AudioWorkletNode first, fall back to ScriptProcessorNode
-      const workletSuccess = await tryAudioWorklet(ctx, source);
-      if (!workletSuccess) {
-        setupScriptProcessor(ctx, source);
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+        streamRef.current = stream;
+
+        // Connect microphone to source node
+        const source = ctx.createMediaStreamSource(stream);
+        sourceRef.current = source;
+
+        // Try AudioWorkletNode first, fall back to ScriptProcessorNode
+        const workletSuccess = await tryAudioWorklet(ctx, source);
+        if (!workletSuccess) {
+          setupScriptProcessor(ctx, source);
+        }
       }
 
       setIsRecording(true);
@@ -187,25 +247,19 @@ export function useAudioRecorder(onAudioData: (audio: Float32Array) => void) {
         audioContextRef.current.suspend().catch(() => {});
       }
     }
-  }, [tryAudioWorklet, setupScriptProcessor]);
+  }, [tryAudioWorklet, setupScriptProcessor, reconnectProcessingNodes]);
 
   const stopRecording = useCallback(() => {
-    // Disconnect processing nodes but keep AudioContext alive
-    if (workletNodeRef.current) {
-      workletNodeRef.current.disconnect();
-      workletNodeRef.current = null;
-    }
-    if (processorRef.current) {
-      processorRef.current.disconnect();
-      processorRef.current = null;
-    }
-    if (sourceRef.current) {
-      sourceRef.current.disconnect();
-      sourceRef.current = null;
-    }
+    // Disconnect processing nodes but keep AudioContext AND MediaStream alive.
+    // Mute the track so the mic indicator goes away, but the OS-level audio
+    // session stays open — avoids expensive teardown/re-acquisition on iPad.
+    disconnectProcessingNodes();
+
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+      streamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = false;
+      });
+      // Do NOT call track.stop() — keep the stream alive for reuse
     }
 
     // Suspend the context instead of closing it — we'll resume() on the next sentence
@@ -214,7 +268,7 @@ export function useAudioRecorder(onAudioData: (audio: Float32Array) => void) {
     }
 
     setIsRecording(false);
-  }, []);
+  }, [disconnectProcessingNodes]);
 
   const preInitialize = useCallback(async () => {
     try {

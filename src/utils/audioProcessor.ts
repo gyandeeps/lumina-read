@@ -57,12 +57,15 @@ export class GrowableAudioBuffer {
   private buffer: Float32Array;
   private length: number;
   private readonly initialCapacity: number;
+  /** Pre-allocated staging buffer for transfer-optimized extraction. */
+  private stagingBuffer: Float32Array | null;
 
   constructor(initialCapacity: number = 480_000) {
     // Default 30s at 16kHz
     this.initialCapacity = initialCapacity;
     this.buffer = new Float32Array(initialCapacity);
     this.length = 0;
+    this.stagingBuffer = null;
   }
 
   /** Append a chunk of audio samples. O(1) amortized. */
@@ -107,6 +110,33 @@ export class GrowableAudioBuffer {
     return this.buffer.slice(start, this.length);
   }
 
+  /**
+   * Get the last N samples into a reusable staging buffer.
+   * The returned Float32Array is suitable for postMessage transferable.
+   * After the buffer is transferred (detached), the next call will
+   * re-allocate. This avoids creating a new 320KB allocation on every
+   * 300ms inference cycle.
+   */
+  getLastNSamplesForTransfer(n: number): Float32Array {
+    const sampleCount = Math.min(n, this.length);
+    if (sampleCount === 0) return new Float32Array(0);
+
+    const start = this.length - sampleCount;
+
+    // Re-allocate staging buffer only if it was transferred (detached)
+    // or if the size changed.
+    if (
+      !this.stagingBuffer ||
+      this.stagingBuffer.byteLength === 0 ||       // detached after transfer
+      this.stagingBuffer.length !== sampleCount
+    ) {
+      this.stagingBuffer = new Float32Array(sampleCount);
+    }
+
+    this.stagingBuffer.set(this.buffer.subarray(start, this.length));
+    return this.stagingBuffer;
+  }
+
   /** Get all accumulated samples as a new Float32Array. */
   getAll(): Float32Array {
     return this.buffer.slice(0, this.length);
@@ -127,5 +157,6 @@ export class GrowableAudioBuffer {
     if (this.buffer.length > this.initialCapacity) {
       this.buffer = new Float32Array(this.initialCapacity);
     }
+    this.stagingBuffer = null;
   }
 }
